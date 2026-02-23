@@ -9,12 +9,13 @@ from render.mesh import Mesh
 
 from PyQt6.QtCore import Qt
 
-from core.camera import OrbitCamera
+# from core.camera import OrbitCamera
 from render.grid import create_grid
 from render.axes import create_axes
 # from models.triangle import triangle_vertices
 from models.cube import cube_vertices_per_vertex_colors, cube_indices
 from scene.scene import Scene
+
 
 def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")

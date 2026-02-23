@@ -21,48 +21,36 @@ from scene.scene import Scene
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
         self.setWindowTitle("Projection App")
         self.setStyleSheet(DARK_THEME)
 
-        # Root (central widget)
-        root = QWidget()
-        self.setCentralWidget(root)
-
-        main_layout = QHBoxLayout(root)
+        # Main panel
+        main_panel = QWidget()
+        main_layout = QHBoxLayout(main_panel)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
+        self.setCentralWidget(main_panel)
 
-        # Left side – Controls panel
-        self.controls = ControlsPanel()
-        main_layout.addWidget(self.controls, 1)
+        # Left panel
+        self.left_panel = ControlsPanel()
+        main_layout.addWidget(self.left_panel, 1)
 
-        # Right side container
-        right = QWidget()
-        right_layout = QVBoxLayout(right)
+        # Right panel
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(0)
+        main_layout.addWidget(right_panel, 4)
 
-        # ---- Top bar ----
+        # Rp - Top bar
         top_bar = QWidget()
-        top_bar.setObjectName("ViewportBar")
         top_layout = QHBoxLayout(top_bar)
         top_layout.setContentsMargins(8, 6, 8, 6)
+        right_layout.addWidget(top_bar)
 
-        top_layout.addWidget(QLabel("Viewport Bar"))
-
-        # ---- Viewport ----
+        # Rp - Bottom bar (Viewport)
         self.viewport = GLViewport()
-        # Scene (világállapot)
         self.scene = Scene()
         self.viewport.scene = self.scene
+        right_layout.addWidget(self.viewport, 1)
 
-        right_layout.addWidget(top_bar)
-        right_layout.addWidget(self.viewport, 1)  # 1 = stretch
-
-        main_layout.addWidget(right, 4)
-
-        # UI → Render kapcsolat
-        self.controls.scale_changed.connect(
-            self.viewport.set_scale_from_slider
-        )

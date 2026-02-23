@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import QApplication
 from ui.main_window import MainWindow
 
 from PyQt6.QtGui import QSurfaceFormat
-# from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
 
 def main():
