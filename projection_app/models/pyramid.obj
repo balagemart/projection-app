@@ -1,0 +1,19 @@
+# Simple square pyramid (OBJ)
+o Pyramid
+
+# vertices (x y z)
+v -1.0 0.0 -1.0   # 1 base corner
+v  1.0 0.0 -1.0   # 2 base corner
+v  1.0 0.0  1.0   # 3 base corner
+v -1.0 0.0  1.0   # 4 base corner
+v  0.0 1.5  0.0   # 5 apex
+
+# faces
+# base (quad) - your loader will triangulate this
+f 1 2 3 4
+
+# sides (triangles)
+f 1 2 5
+f 2 3 5
+f 3 4 5
+f 4 1 5

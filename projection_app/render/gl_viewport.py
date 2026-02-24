@@ -61,12 +61,13 @@ class GLViewport(QOpenGLWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumSize(640, 480)
-
+        
         self._program: int | None = None
         self._u_scale_loc: int = -1
 
-        self._mesh: Mesh | None = None
+        self._meshes: list[Mesh] = []
         self._scale: float = 1.0
+        self._scene_dirty = True
 
         # self.camera = OrbitCamera()
         self.scene: Scene | None = None
@@ -123,6 +124,8 @@ class GLViewport(QOpenGLWidget):
 
         gl.glEnable(gl.GL_MULTISAMPLE)
 
+        self.rebuild_meshes_from_scene()
+
     def mousePressEvent(self, event):
         self.last_pos = event.position()
 
@@ -144,9 +147,39 @@ class GLViewport(QOpenGLWidget):
     def resizeGL(self, w: int, h: int) -> None:
         gl.glViewport(0, 0, w, h)
 
+    def rebuild_meshes_from_scene(self) -> None:
+        # Scene → GPU Mesh-ek
+        self._meshes.clear()
+
+        if self.scene is None:
+            return
+
+        for sm in self.scene.meshes:
+            verts = sm.vertices
+
+            # ha (N,3)-as, alakítsd flat-re, mert a Mesh most flat arrayt vár
+            if verts.ndim == 2:
+                verts = verts.reshape(-1)
+
+            m = Mesh(
+                vertices=verts,
+                components_per_vertex=3,
+                primitive=gl.GL_TRIANGLES,
+                indices=sm.indices,
+            )
+            self._meshes.append(m)
+
+    def mark_scene_dirty(self) -> None:
+        self._scene_dirty = True
+        self.update()
+
     def paintGL(self) -> None:
         if self._program is None or self._mesh is None:
             return
+
+        if self._scene_dirty:
+            self.rebuild_meshes_from_scene()
+            self._scene_dirty = False
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
@@ -169,6 +202,8 @@ class GLViewport(QOpenGLWidget):
             # gl.glLineWidth(1.0)
         else:
             print("Axes did not initialize.")
-        self._mesh.draw()
+
+        for m in self._meshes:
+            m.draw()
 
         gl.glUseProgram(0)

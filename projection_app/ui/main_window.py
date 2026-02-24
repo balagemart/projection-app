@@ -3,13 +3,16 @@ from PyQt6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QVBoxLayout,
-    QLabel
+    QLabel,
+    QFileDialog,
+    QMenuBar
 )
 
 from render.gl_viewport import GLViewport
 from ui.controls_panel import ControlsPanel
 from ui.styles import DARK_THEME
 from scene.scene import Scene
+from io_utils.obj_loader import load_obj
 
 # MainLayout (HBox)
 # ├── ControlsPanel
@@ -35,7 +38,6 @@ class MainWindow(QMainWindow):
         self.left_panel = ControlsPanel()
         main_layout.addWidget(self.left_panel, 1)
 
-        # Right panel
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
@@ -54,3 +56,30 @@ class MainWindow(QMainWindow):
         self.viewport.scene = self.scene
         right_layout.addWidget(self.viewport, 1)
 
+        # MenuBar
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("File")
+        import_action = file_menu.addAction("Import OBJ")
+        import_action.triggered.connect(self.import_obj)
+
+    def import_obj(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import OBJ",
+            "",
+            "OBJ Files (*.obj)"
+        )
+        if not path:
+            return
+
+        verts, inds = load_obj(path)
+
+        # döntés: lecseréljük a világ mesh-eit, vagy hozzáadjuk?
+        self.scene.clear_meshes()
+        self.scene.add_mesh(verts, inds)
+
+        self.viewport.mark_scene_dirty()
+
+        # a viewport építse újra a GPU mesh-eket a Scene-ből
+        self.viewport.rebuild_meshes_from_scene()
+        self.viewport.update()

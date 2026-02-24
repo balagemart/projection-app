@@ -1,14 +1,24 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
+import numpy as np
 
 from core.camera import OrbitCamera
 
 
 @dataclass
+class SceneMesh:
+    # csak adat, semmi OpenGL
+    vertices: np.ndarray          # (N,3) float32, vagy flat is ok
+    indices: np.ndarray | None = None  # (M,) uint32
+
+
+@dataclass
 class Scene:
-    """
-    Minimál jelenet (Scene) – csak az app "világállapota".
-    Most: 1 db kamera.
-    Később: pontok, objektumok, kijelölés, stb.
-    """
     camera: OrbitCamera = field(default_factory=OrbitCamera)
+    meshes: list[SceneMesh] = field(default_factory=list)
+
+    def clear_meshes(self) -> None:
+        self.meshes.clear()
+
+    def add_mesh(self, vertices: np.ndarray, indices: np.ndarray | None = None) -> None:
+        self.meshes.append(SceneMesh(vertices=vertices, indices=indices))
