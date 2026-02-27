@@ -10,6 +10,7 @@ class SceneMesh:
     # csak adat, semmi OpenGL
     vertices: np.ndarray          # (N,3) float32, vagy flat is ok
     indices: np.ndarray | None = None  # (M,) uint32
+    components_per_vertex: int = 3
 
 
 @dataclass
@@ -20,5 +21,14 @@ class Scene:
     def clear_meshes(self) -> None:
         self.meshes.clear()
 
-    def add_mesh(self, vertices: np.ndarray, indices: np.ndarray | None = None) -> None:
-        self.meshes.append(SceneMesh(vertices=vertices, indices=indices))
+    def add_mesh(
+            self,
+            vertices: np.ndarray,
+            indices: np.ndarray | None = None,
+            components_per_vertex: int = 3
+            ) -> None:
+        self.meshes.append(SceneMesh(
+            vertices=vertices,
+            indices=indices,
+            components_per_vertex=components_per_vertex
+            ))

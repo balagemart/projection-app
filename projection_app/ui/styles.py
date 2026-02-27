@@ -1,34 +1,82 @@
 DARK_THEME = """
+/* GLOBAL BASE */
 QMainWindow {
-    background-color: rgb(36, 38, 41);
+    background-color: #2b2b2b;
 }
 
 QWidget {
-    color: rgb(220, 230, 225);
+    color: #dddddd;
 }
 
+/* LAYOUT AREAS */
 #ControlsPanel {
-    background-color: rgb(48, 58, 50);
-    border-right: 3px solid rgb(70, 90, 80);
+    background-color: #353535;
+    border-right: 1px solid #444;
 }
 
-QPushButton {
-    background-color: rgb(60, 75, 70);
-    border: 1px solid rgb(80, 110, 95);
+#RightPane {
+    background-color: #2e2e2e;
+}
+
+#TopBar {
+    background-color: #3a3a3a;
+    border-bottom: 1px solid #444;
+}
+
+#Viewport {
+    background-color: #1e1e1e;
+}
+
+
+/* MENU BAR */
+QMenuBar {
+    background-color: #2b2b2b;
+}
+
+QMenuBar::item {
+    padding: 4px 10px;
+}
+
+QMenuBar::item:selected {
+    background: #444;
+}
+
+
+/* DROPDOWN MENUS */
+QMenu {
+    background-color: #353535;
+    border: 1px solid #444;
+}
+
+QMenu::item:selected {
+    background-color: #555;
+}
+
+
+/* TOOL BUTTONS (TopBar) */
+#TopBar QToolButton {
+    background-color: #454545;
+    border: 1px solid #555;
+    padding: 4px 8px;
+}
+
+#TopBar QToolButton:hover {
+    background-color: #5a5a5a;
+}
+
+#TopBar QToolButton::menu-indicator {
+    image: none;
+}
+
+
+/* PUSH BUTTONS (Left panel) */
+#ControlsPanel QPushButton {
+    background-color: #454545;
+    border: 1px solid #555;
     padding: 4px;
 }
 
-QPushButton:hover {
-    background-color: rgb(70, 95, 85);
-}
-
-QSlider::groove:horizontal {
-    background: rgb(65, 75, 70);
-    height: 6px;
-}
-
-QSlider::handle:horizontal {
-    background: rgb(90, 140, 110);
-    width: 14px;
+#ControlsPanel QPushButton:hover {
+    background-color: #5a5a5a;
 }
 """

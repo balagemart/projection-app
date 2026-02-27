@@ -94,8 +94,10 @@ class Mesh:
             gl.glVertexAttribPointer(
                 1, 3, gl.GL_FLOAT, gl.GL_FALSE, stride, ctypes.c_void_p(3 * 4)
             )
+        else:
+            gl.glDisableVertexAttribArray(1)
+            gl.glVertexAttrib3f(1, 0.8, 0.8, 0.8)
 
-        # unbind (EBO-t NEM szabad itt lebindolni külön, a VAO-n rajta maradhat)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
         gl.glBindVertexArray(0)
 

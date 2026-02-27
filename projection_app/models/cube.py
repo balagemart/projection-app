@@ -1,11 +1,3 @@
-# import numpy as mp
-#
-# def cube_vertices(size: float = 1.0) -> np.ndarray:
-#     s = size / 2.0
-#     return np.array([
-#
-#     ], dtype=np.float32)
-
 import numpy as np
 
 
@@ -48,7 +40,6 @@ def cube_vertices_per_vertex_colors(size: float = 1.0) -> np.ndarray:
 def cube_indices() -> np.ndarray:
     """
     12 háromszög -> 36 index.
-    Fontos: 8 vertexből dolgozunk, ezért a face-normál/szín nem lesz külön laponként.
     """
     return np.array([
         # bottom (0,1,2,3)

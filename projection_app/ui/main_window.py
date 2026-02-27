@@ -1,24 +1,21 @@
+from __future__ import annotations
+
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
     QHBoxLayout,
-    QVBoxLayout,
-    QLabel,
     QFileDialog,
-    QMenuBar
 )
 
-from render.gl_viewport import GLViewport
-from ui.controls_panel import ControlsPanel
 from ui.styles import DARK_THEME
+from ui.controls_panel import ControlsPanel
+from ui.right_pane import RightPane
+from ui.menus import build_menus
+
 from scene.scene import Scene
 from io_utils.obj_loader import load_obj
-
-# MainLayout (HBox)
-# ├── ControlsPanel
-# └── Right (VBox)
-#        ├── TopBar
-#        └── Viewport
+from models.sphere import sphere_vertices
+from models.cube import cube_vertices_per_vertex_colors, cube_indices
 
 
 class MainWindow(QMainWindow):
@@ -27,59 +24,66 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Projection App")
         self.setStyleSheet(DARK_THEME)
 
-        # Main panel
-        main_panel = QWidget()
-        main_layout = QHBoxLayout(main_panel)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
-        self.setCentralWidget(main_panel)
-
-        # Left panel
-        self.left_panel = ControlsPanel()
-        main_layout.addWidget(self.left_panel, 1)
-
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(0)
-        main_layout.addWidget(right_panel, 4)
-
-        # Rp - Top bar
-        top_bar = QWidget()
-        top_layout = QHBoxLayout(top_bar)
-        top_layout.setContentsMargins(8, 6, 8, 6)
-        right_layout.addWidget(top_bar)
-
-        # Rp - Bottom bar (Viewport)
-        self.viewport = GLViewport()
+        # --- Scene ---
         self.scene = Scene()
-        self.viewport.scene = self.scene
-        right_layout.addWidget(self.viewport, 1)
 
-        # MenuBar
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu("File")
-        import_action = file_menu.addAction("Import OBJ")
-        import_action.triggered.connect(self.import_obj)
+        # --- Central layout ---
+        root = QWidget(self)
+        self.setCentralWidget(root)
 
-    def import_obj(self):
+        layout = QHBoxLayout(root)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        self.left_panel = ControlsPanel()
+        self.right_pane = RightPane(self.scene)
+
+        layout.addWidget(self.left_panel, 1)
+        layout.addWidget(self.right_pane, 4)
+
+        # --- Menus ---
+        build_menus(self, on_import_obj=self.import_obj)
+
+        # --- Wire up TopBar actions ---
+        self.right_pane.top_bar.add_cube_requested.connect(self.add_cube)
+        self.right_pane.top_bar.add_sphere_requested.connect(self.add_sphere)
+
+        # (ha a ControlsPanel küld jelet, itt kötöd össze a viewporttal)
+        # self.left_panel.scale_changed.connect(self.right_pane.viewport.set_scale_from_slider)
+
+    @property
+    def viewport(self):
+        return self.right_pane.viewport
+
+    def import_obj(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Import OBJ",
             "",
-            "OBJ Files (*.obj)"
+            "OBJ Files (*.obj)",
         )
         if not path:
             return
 
         verts, inds = load_obj(path)
 
-        # döntés: lecseréljük a világ mesh-eit, vagy hozzáadjuk?
         self.scene.clear_meshes()
-        self.scene.add_mesh(verts, inds)
+        # OBJ általában xyz (3)
+        self.scene.add_mesh(verts, inds, components_per_vertex=3)
 
         self.viewport.mark_scene_dirty()
 
-        # a viewport építse újra a GPU mesh-eket a Scene-ből
-        self.viewport.rebuild_meshes_from_scene()
-        self.viewport.update()
+    def add_cube(self) -> None:
+        verts = cube_vertices_per_vertex_colors(size=3.0)
+        inds = cube_indices()
+
+        self.scene.add_mesh(verts, inds, components_per_vertex=6)
+        self.viewport.mark_scene_dirty()
+
+    def add_sphere(self) -> None:
+        verts, inds = sphere_vertices(2, 100, 100)
+        verts = verts.reshape(-1)
+
+        # Ha a sphere jelenleg xyz-only: 3
+        self.scene.add_mesh(verts, inds, components_per_vertex=6)
+        self.viewport.mark_scene_dirty()
