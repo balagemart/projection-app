@@ -157,26 +157,21 @@ class GLViewport(QOpenGLWidget):
         if self.scene is None:
             return
 
-        for sm in self.scene.meshes:
-            verts = sm.vertices
+        for obj in self.scene.objects:
+            mesh = obj.get_mesh()
+            if mesh is not None:
+                verts = mesh.vertices
+                inds = mesh.indices
+                components_per_vertex = mesh.components_per_vertex
 
-            # Ha Nx3, alakítsd flat-re (Mesh osztályod így számol vertex_count-ot)
-            if isinstance(verts, (list, tuple)):
-                # ha véletlenül listát kapnál
-                import numpy as np
-                verts = np.array(verts, dtype=np.float32)
-
-            if hasattr(verts, "ndim") and verts.ndim == 2:
-                verts = verts.reshape(-1)
-
-            self._meshes.append(
-                Mesh(
-                    vertices=verts,
-                    components_per_vertex=sm.components_per_vertex,
-                    primitive=gl.GL_TRIANGLES,
-                    indices=sm.indices,
+                self._meshes.append(
+                    Mesh(
+                        vertices=verts,
+                        components_per_vertex=components_per_vertex,
+                        primitive=gl.GL_TRIANGLES,
+                        indices=inds,
+                    )
                 )
-            )
 
     # --- Input ---
     def mousePressEvent(self, event):

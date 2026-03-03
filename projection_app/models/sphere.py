@@ -4,7 +4,7 @@ import numpy as np
 def sphere_vertices(radius=1.0, stacks=20, slices=20, color=(0.2, 0.6, 1.0)):
     vertices = []
     indices = []
-    
+
     r_col, g_col, b_col = color
 
     for i in range(stacks + 1):

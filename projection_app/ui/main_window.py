@@ -14,8 +14,6 @@ from ui.menus import build_menus
 
 from scene.scene import Scene
 from io_utils.obj_loader import load_obj
-from models.sphere import sphere_vertices
-from models.cube import cube_vertices_per_vertex_colors, cube_indices
 
 
 class MainWindow(QMainWindow):
@@ -55,7 +53,15 @@ class MainWindow(QMainWindow):
     def viewport(self):
         return self.right_pane.viewport
 
-    def import_obj(self) -> None:
+    def add_cube(self):
+        self.scene.add_cube()
+        self.viewport.mark_scene_dirty()
+
+    def add_sphere(self):
+        self.scene.add_sphere()
+        self.viewport.mark_scene_dirty()
+
+    def import_obj(self) -> None:  # TODO atirni mar mashogy mukodik a scene
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Import OBJ",
@@ -67,23 +73,5 @@ class MainWindow(QMainWindow):
 
         verts, inds = load_obj(path)
 
-        self.scene.clear_meshes()
-        # OBJ általában xyz (3)
-        self.scene.add_mesh(verts, inds, components_per_vertex=3)
-
-        self.viewport.mark_scene_dirty()
-
-    def add_cube(self) -> None:
-        verts = cube_vertices_per_vertex_colors(size=3.0)
-        inds = cube_indices()
-
-        self.scene.add_mesh(verts, inds, components_per_vertex=6)
-        self.viewport.mark_scene_dirty()
-
-    def add_sphere(self) -> None:
-        verts, inds = sphere_vertices(2, 100, 100)
-        verts = verts.reshape(-1)
-
-        # Ha a sphere jelenleg xyz-only: 3
-        self.scene.add_mesh(verts, inds, components_per_vertex=6)
+        self.scene.add_imported(verts, inds, components_per_vertex=3)
         self.viewport.mark_scene_dirty()
