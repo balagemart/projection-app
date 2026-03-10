@@ -138,7 +138,8 @@ class ControlsPanel(QWidget):
             return
 
         self.current_object.params["size"] = float(value)
-        self.current_object.dirty = True
+        self.current_object.geometry_dirty = True
+        self.current_object.transform_dirty = True
         self.scene_changed.emit()
 
     def on_sphere_radius_changed(self, value: float) -> None:
@@ -146,7 +147,8 @@ class ControlsPanel(QWidget):
             return
 
         self.current_object.params["radius"] = float(value)
-        self.current_object.dirty = True
+        self.current_object.geometry_dirty = True
+        self.current_object.transform_dirty = True
         self.scene_changed.emit()
 
     def on_sphere_stacks_changed(self, value: float) -> None:
@@ -154,7 +156,8 @@ class ControlsPanel(QWidget):
             return
 
         self.current_object.params["stacks"] = int(value)
-        self.current_object.dirty = True
+        self.current_object.transform_dirty = True
+        self.current_object.geometry_dirty = True
         self.scene_changed.emit()
 
     def on_sphere_slices_changed(self, value: int) -> None:
@@ -162,5 +165,6 @@ class ControlsPanel(QWidget):
             return
 
         self.current_object.params["slices"] = int(value)
-        self.current_object.dirty = True
+        self.current_object.transform_dirty = True
+        self.current_object.geometry_dirty = True
         self.scene_changed.emit()

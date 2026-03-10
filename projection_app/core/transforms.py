@@ -1,6 +1,88 @@
 import numpy as np
 
 
+def translation_matrix(position) -> np.ndarray:
+    tx, ty, tz = position
+
+    T = np.eye(4, dtype=np.float32)
+
+    T[0, 3] = tx
+    T[1, 3] = ty
+    T[2, 3] = tz
+
+    return T
+
+
+def scale_matrix(scale) -> np.ndarray:
+    sx, sy, sz = scale
+
+    S = np.eye(4, dtype=np.float32)
+
+    S[0, 0] = sx
+    S[1, 1] = sy
+    S[2, 2] = sz
+
+    return S
+
+
+def rotation_matrix_x(angle) -> np.ndarray:
+    c = np.cos(angle)
+    s = np.sin(angle)
+
+    Rx = np.eye(4, dtype=np.float32)
+
+    Rx[1, 1] = c
+    Rx[1, 2] = -s
+    Rx[2, 1] = s
+    Rx[2, 2] = c
+
+    return Rx
+
+
+def rotation_matrix_y(angle) -> np.ndarray:
+    c = np.cos(angle)
+    s = np.sin(angle)
+
+    Ry = np.eye(4, dtype=np.float32)
+
+    Ry[0, 0] = c
+    Ry[0, 2] = s
+    Ry[2, 0] = -s
+    Ry[2, 2] = c
+
+    return Ry
+
+
+def rotation_matrix_z(angle) -> np.ndarray:
+    c = np.cos(angle)
+    s = np.sin(angle)
+
+    Rz = np.eye(4, dtype=np.float32)
+
+    Rz[0, 0] = c
+    Rz[0, 1] = -s
+    Rz[1, 0] = s
+    Rz[1, 1] = c
+
+    return Rz
+
+
+def model_matrix(position, rotation, scale) -> np.ndarray:
+    T = translation_matrix(position)
+    S = scale_matrix(scale)
+
+    rx, ry, rz = rotation
+
+    Rx = rotation_matrix_x(rx)
+    Ry = rotation_matrix_y(ry)
+    Rz = rotation_matrix_z(rz)
+
+    R = Rz @ Ry @ Rx
+    M = T @ R @ S
+
+    return M
+
+
 def perspective(
         fov_y_rad: float,
         aspect: float,

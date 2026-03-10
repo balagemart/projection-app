@@ -4,6 +4,7 @@ import numpy as np
 from typing import Any
 
 from core.camera import OrbitCamera
+from core.transforms import model_matrix
 from models.cube import cube_vertices_per_vertex_colors, cube_indices
 from models.sphere import sphere_vertices
 
@@ -11,7 +12,7 @@ from models.sphere import sphere_vertices
 @dataclass
 class MeshData:
     """
-    CPU-oldali geometry csomag (nem OpenGL):
+    CPU-oldali geometry csomag:
     - vertices: flat float32 array (pl. xyz vagy xyzrgb)
     - indices: optional uint32 array (EBO-hoz)
     - components_per_vertex: 3 vagy 6
@@ -33,9 +34,14 @@ class SceneObject:
     name: str
     type: str
     params: dict[str, Any]
+    position: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])
+    rotation: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])  # radians
+    scale: list[float] = field(default_factory=lambda: [1.0, 1.0, 1.0])
     visible: bool = True
-    dirty: bool = True
-    mesh_cache: MeshData | None = None
+    geometry_dirty: bool = True
+    transform_dirty: bool = True
+    local_mesh_cache: MeshData | None = None
+    world_mesh_cache: MeshData | None = None
 
     def generate_mesh(self) -> MeshData:
         """
@@ -47,7 +53,7 @@ class SceneObject:
             verts = cube_vertices_per_vertex_colors(size)
             inds = cube_indices()
 
-            mesh = MeshData(
+            local_mesh = MeshData(
                 vertices=verts,
                 indices=inds,
                 components_per_vertex=6
@@ -59,13 +65,13 @@ class SceneObject:
 
             verts, inds = sphere_vertices(radius, stacks, slices)
 
-            mesh = MeshData(
+            local_mesh = MeshData(
                 vertices=verts,
                 indices=inds,
                 components_per_vertex=6
             )
         elif type == "imported":
-            mesh = MeshData(
+            local_mesh = MeshData(
                 vertices=self.params["vertices"],
                 indices=self.params["indices"],
                 components_per_vertex=self.params["components_per_vertex"]
@@ -73,18 +79,49 @@ class SceneObject:
         else:
             raise ValueError(f"Unknown object type: {self.type}")
 
-        return mesh
+        return local_mesh
+
+    def apply_transform(self, mesh, M) -> MeshData:
+        verts = mesh.vertices.copy()
+        c = mesh.components_per_vertex
+
+        # NxC shape
+        verts = verts.reshape(-1, c)
+
+        # xyz coords
+        positions = verts[:, 0:3]
+
+        # homogenous coords
+        ones = np.ones((positions.shape[0], 1), dtype=np.float32)
+        positions_h = np.hstack((positions, ones))
+
+        # transform
+        positions_transformed = positions_h @ M.T
+
+        # xyz
+        verts[:, 0:3] = positions_transformed[:, 0:3]
+
+        return MeshData(
+                vertices=verts.reshape(-1).copy(),
+                indices=mesh.indices,
+                components_per_vertex=mesh.components_per_vertex
+        )
 
     def get_mesh(self) -> MeshData:
         """
         Cache-elt mesh visszaadása.
         Ha dirty vagy nincs cache -> generate_mesh() és cache update.
         """
-        if self.dirty or self.mesh_cache is None:
-            self.mesh_cache = self.generate_mesh()
-            self.dirty = False
-
-        return self.mesh_cache
+        M = model_matrix(self.position, self.rotation, self.scale)
+        if self.geometry_dirty or self.local_mesh_cache is None:
+            self.local_mesh_cache = self.generate_mesh()
+            self.world_mesh_cache = self.apply_transform(self.local_mesh_cache, M)
+            self.geometry_dirty = False
+            self.transform_dirty = False
+        elif self.transform_dirty or self.world_mesh_cache is None:
+            self.world_mesh_cache = self.apply_transform(self.local_mesh_cache, M)
+            self.transform_dirty = False
+        return self.world_mesh_cache
 
 
 @dataclass
