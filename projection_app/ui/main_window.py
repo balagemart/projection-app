@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
 
 from ui.styles import DARK_THEME
 from ui.controls_panel import ControlsPanel
-from ui.right_pane import RightPane
+from ui.right_panel import RightPanel
 from ui.menus import build_menus
 
 from scene.scene import Scene
@@ -34,31 +34,32 @@ class MainWindow(QMainWindow):
         layout.setSpacing(0)
 
         self.left_panel = ControlsPanel()
-        self.right_pane = RightPane(self.scene)
+        self.left_panel.set_scene(self.scene)
+        self.right_panel = RightPanel(self.scene)
+        self.left_panel.scene_changed.connect(self.right_panel.viewport.mark_scene_dirty)
 
         layout.addWidget(self.left_panel, 1)
-        layout.addWidget(self.right_pane, 4)
+        layout.addWidget(self.right_panel, 4)
 
         # --- Menus ---
         build_menus(self, on_import_obj=self.import_obj)
 
         # --- Wire up TopBar actions ---
-        self.right_pane.top_bar.add_cube_requested.connect(self.add_cube)
-        self.right_pane.top_bar.add_sphere_requested.connect(self.add_sphere)
-
-        # (ha a ControlsPanel küld jelet, itt kötöd össze a viewporttal)
-        # self.left_panel.scale_changed.connect(self.right_pane.viewport.set_scale_from_slider)
+        self.right_panel.top_bar.add_cube_requested.connect(self.add_cube)
+        self.right_panel.top_bar.add_sphere_requested.connect(self.add_sphere)
 
     @property
     def viewport(self):
-        return self.right_pane.viewport
+        return self.right_panel.viewport
 
     def add_cube(self):
         self.scene.add_cube()
+        self.left_panel.refresh_objects()
         self.viewport.mark_scene_dirty()
 
     def add_sphere(self):
         self.scene.add_sphere()
+        self.left_panel.refresh_objects()
         self.viewport.mark_scene_dirty()
 
     def import_obj(self) -> None:  # TODO atirni mar mashogy mukodik a scene
@@ -74,4 +75,5 @@ class MainWindow(QMainWindow):
         verts, inds = load_obj(path)
 
         self.scene.add_imported(verts, inds, components_per_vertex=3)
+        self.left_panel.refresh_objects()
         self.viewport.mark_scene_dirty()

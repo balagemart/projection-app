@@ -1,0 +1,67 @@
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSlider, QLabel, QListWidget, QFormLayout , QDoubleSpinBox, QListWidgetItem
+from PyQt6.QtCore import Qt, pyqtSignal
+from scene.scene import Scene, SceneObject
+
+
+class ControlsPanel(QWidget):
+
+    scene_changed = pyqtSignal(int)         # event with int value
+
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("ControlsPanel")
+        self.setAutoFillBackground(True)
+        self.scene: Scene | None = None
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Objects"))
+
+        self.list_widget = QListWidget(self)
+        layout.addWidget(self.list_widget)
+
+        layout.addWidget(QLabel("Properties"))
+        self.properties_widget = QWidget()
+        layout.addWidget(self.properties_widget)
+        self.properties_layout = QFormLayout(self.properties_widget)
+
+    def _build_cube_properties(self, obj: SceneObject):
+        size = QDoubleSpinBox()
+        size.setValue(obj.params["size"])
+
+        self.properties_layout.addRow("Size", size)
+
+    def _build_sphere_properties(self, obj: SceneObject):
+        radius = QDoubleSpinBox()
+        slices = QDoubleSpinBox()
+        stacks = QDoubleSpinBox()
+
+        radius.setValue(obj.params["radius"])
+        slices.setValue(obj.params["slices"])
+        stacks.setValue(obj.params["stacks"])
+
+    def _build_imported_properties(self, obj: SceneObject):
+        size = QDoubleSpinBox()
+        # TODO matrix szorzassal size noveles
+
+
+
+    def build_properties(self, obj: SceneObject):
+        if obj.type == "cube":
+            self._build_cube_properties(obj)
+        elif obj.type == "sphere":
+            self._build_sphere_properties(obj)
+        elif obj.type == "imported":
+            self._build_imported_properties(obj)
+
+    def set_scene(self, scene: Scene):
+        self.scene = scene
+
+    def refresh_objects(self):
+        self.list_widget.clear()
+        for obj in self.scene.objects:
+            item = QListWidgetItem(obj.name)
+            item.setData(Qt.ItemDataRole.UserRole, obj.id)
+            self.list_widget.addItem(item)
+
+
+#        self.slider.valueChanged.connect(self.scale_changed.emit)

@@ -7,7 +7,7 @@ from scene.scene import Scene
 from ui.top_bar import TopBar
 
 
-class RightPane(QWidget):
+class RightPanel(QWidget):
     def __init__(self, scene: Scene, parent=None):
         super().__init__(parent)
         self.setObjectName("RightPane")
