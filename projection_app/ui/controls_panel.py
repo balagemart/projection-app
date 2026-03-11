@@ -1,4 +1,8 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSlider, QLabel, QListWidget, QFormLayout , QDoubleSpinBox, QSpinBox, QListWidgetItem
+import numpy as np
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QLabel, QListWidget, QFormLayout,
+    QDoubleSpinBox, QSpinBox, QListWidgetItem, QHBoxLayout
+)
 from PyQt6.QtCore import Qt, pyqtSignal
 from scene.scene import Scene, SceneObject
 
@@ -59,6 +63,32 @@ class ControlsPanel(QWidget):
         while self.properties_layout.rowCount():
             self.properties_layout.removeRow(0)
 
+    def _generate_xyz_spinboxes(
+            self,
+            values,
+            *,
+            min_value: float,
+            max_value: float,
+            step: float,
+            decimals: int = 3
+    ):
+        row_widget = QWidget(self)
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(6)
+
+        spins = []
+        for v in values:
+            spin = QDoubleSpinBox()
+            spin.setRange(min_value, max_value)
+            spin.setDecimals(decimals)
+            spin.setSingleStep(step)
+            spin.setValue(float(v))
+            row_layout.addWidget(spin)
+            spins.append(spin)
+
+        return row_widget, spins
+
     def build_properties(self, obj: SceneObject):
         self.clear_properties()
         self.current_object = obj
@@ -69,10 +99,73 @@ class ControlsPanel(QWidget):
         elif obj.type == "imported":
             self._build_imported_properties(obj)
 
+        self._build_transform_properties(obj)
+
+    def on_position_changed(self, axis: int, value: float) -> None:
+        if self.current_object is None:
+            return
+
+        self.current_object.position[axis] = float(value)
+        self.current_object.transform_dirty = True
+        self.scene_changed.emit()
+
+    def on_rotation_changed(self, axis: int, value: float) -> None:
+        if self.current_object is None:
+            return None
+
+        self.current_object.rotation[axis] = float(value)
+        self.current_object.transform_dirty = True
+        self.scene_changed.emit()
+
+    def on_scale_changed(self, axis: int, value: float) -> None:
+        if self.current_object is None:
+            return
+
+        self.current_object.scale[axis] = float(value)
+        self.current_object.transform_dirty = True
+        self.scene_changed.emit()
+
+    def _build_transform_properties(self, obj: SceneObject):
+        pos_row, pos_spins = self._generate_xyz_spinboxes(
+                    obj.position,
+                    min_value=-1000.0,
+                    max_value=1000.0,
+                    step=0.1,
+                )
+        rot_deg = [np.rad2deg(v) for v in obj.rotation]
+        rot_row, rot_spins = self._generate_xyz_spinboxes(
+                    rot_deg,
+                    min_value=-360.0,
+                    max_value=360.0,
+                    step=0.1,
+                )
+        scale_row, scale_spins = self._generate_xyz_spinboxes(
+                    obj.scale,
+                    min_value=0.01,
+                    max_value=1000.0,
+                    step=0.1
+                )
+
+        pos_spins[0].valueChanged.connect(lambda v: self.on_position_changed(0, v))
+        pos_spins[1].valueChanged.connect(lambda v: self.on_position_changed(1, v))
+        pos_spins[2].valueChanged.connect(lambda v: self.on_position_changed(2, v))
+
+        rot_spins[0].valueChanged.connect(lambda v: self.on_rotation_changed(0, v))
+        rot_spins[1].valueChanged.connect(lambda v: self.on_rotation_changed(1, v))
+        rot_spins[2].valueChanged.connect(lambda v: self.on_rotation_changed(2, v))
+
+        scale_spins[0].valueChanged.connect(lambda v: self.on_scale_changed(0, v))
+        scale_spins[1].valueChanged.connect(lambda v: self.on_scale_changed(1, v))
+        scale_spins[2].valueChanged.connect(lambda v: self.on_scale_changed(2, v))
+
+        self.properties_layout.addRow("Position", pos_row)
+        self.properties_layout.addRow("Rotation", rot_row)
+        self.properties_layout.addRow("Scale", scale_row)
+
     def on_selection_changed(
             self,
             current: QListWidgetItem | None,
-            previous: QListWidgetItem | None) -> None:
+            ) -> None:
         if self.scene is None:
             return
 
@@ -139,7 +232,6 @@ class ControlsPanel(QWidget):
 
         self.current_object.params["size"] = float(value)
         self.current_object.geometry_dirty = True
-        self.current_object.transform_dirty = True
         self.scene_changed.emit()
 
     def on_sphere_radius_changed(self, value: float) -> None:
@@ -148,7 +240,6 @@ class ControlsPanel(QWidget):
 
         self.current_object.params["radius"] = float(value)
         self.current_object.geometry_dirty = True
-        self.current_object.transform_dirty = True
         self.scene_changed.emit()
 
     def on_sphere_stacks_changed(self, value: float) -> None:
@@ -156,7 +247,6 @@ class ControlsPanel(QWidget):
             return
 
         self.current_object.params["stacks"] = int(value)
-        self.current_object.transform_dirty = True
         self.current_object.geometry_dirty = True
         self.scene_changed.emit()
 
@@ -165,6 +255,5 @@ class ControlsPanel(QWidget):
             return
 
         self.current_object.params["slices"] = int(value)
-        self.current_object.transform_dirty = True
         self.current_object.geometry_dirty = True
         self.scene_changed.emit()
