@@ -7,13 +7,13 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from scene.scene import Scene, SceneObject
 
 
-class ControlsPanel(QWidget):
+class LeftPanel(QWidget):
 
     scene_changed = pyqtSignal()         # event with int value
 
     def __init__(self):
         super().__init__()
-        self.setObjectName("ControlsPanel")
+        self.setObjectName("LeftPanel")
         self.setAutoFillBackground(True)
 
         self.scene: Scene | None = None
@@ -78,12 +78,14 @@ class ControlsPanel(QWidget):
         row_layout.setSpacing(6)
 
         spins = []
-        for v in values:
-            spin = QDoubleSpinBox()
+        prefixes = ["X ", "Y ", "Z "]
+        for prefix, value in zip(prefixes, values):
+            spin = QDoubleSpinBox(self)
             spin.setRange(min_value, max_value)
             spin.setDecimals(decimals)
             spin.setSingleStep(step)
-            spin.setValue(float(v))
+            spin.setValue(float(value))
+            spin.setPrefix(prefix)
             row_layout.addWidget(spin)
             spins.append(spin)
 
@@ -113,7 +115,7 @@ class ControlsPanel(QWidget):
         if self.current_object is None:
             return None
 
-        self.current_object.rotation[axis] = float(value)
+        self.current_object.rotation[axis] = float(np.deg2rad(value))
         self.current_object.transform_dirty = True
         self.scene_changed.emit()
 
@@ -165,6 +167,7 @@ class ControlsPanel(QWidget):
     def on_selection_changed(
             self,
             current: QListWidgetItem | None,
+            previous: QListWidgetItem | None
             ) -> None:
         if self.scene is None:
             return

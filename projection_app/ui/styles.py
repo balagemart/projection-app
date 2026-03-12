@@ -9,7 +9,7 @@ QWidget {
 }
 
 /* LAYOUT AREAS */
-#ControlsPanel {
+#LeftPanel {
     background-color: #353535;
     border-right: 1px solid #444;
 }
@@ -60,6 +60,12 @@ QMenu::item:selected {
     padding: 4px 8px;
 }
 
+#TopBar QPushButton {
+    background-color: #454545;
+    border: 1px solid #555;
+    padding: 4px 8px;
+}
+
 #TopBar QToolButton:hover {
     background-color: #5a5a5a;
 }
@@ -70,13 +76,50 @@ QMenu::item:selected {
 
 
 /* PUSH BUTTONS (Left panel) */
-#ControlsPanel QPushButton {
+#LeftPanel QPushButton {
     background-color: #454545;
     border: 1px solid #555;
     padding: 4px;
 }
 
-#ControlsPanel QPushButton:hover {
+#LeftPanel QPushButton:hover {
+    background-color: #5a5a5a;
+}
+
+/* LIST WIDGET */
+#LeftPanel QListWidget {
+    background-color: #2f2f2f;
+    border: 1px solid #444;
+}
+
+#LeftPanel QListWidget::item {
+    padding: 4px;
+}
+
+#LeftPanel QListWidget::item:selected {
+    background-color: #555;
+}
+
+
+/* PROPERTY AREA (spinboxok stb) */
+#LeftPanel QDoubleSpinBox,
+#LeftPanel QSpinBox,
+#LeftPanel QLineEdit {
+    background-color: #2f2f2f;
+    border: 1px solid #444;
+    padding: 2px;
+}
+
+
+/* SPINBOX BUTTONS */
+#LeftPanel QAbstractSpinBox::up-button,
+#LeftPanel QAbstractSpinBox::down-button {
+    background-color: #454545;
+    border-left: 1px solid #555;
+}
+
+#LeftPanel QAbstractSpinBox::up-button:hover,
+#LeftPanel QAbstractSpinBox::down-button:hover {
     background-color: #5a5a5a;
 }
 """

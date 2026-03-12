@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass, field
 
-from core.transforms import perspective, look_at, identity
+from core.transforms import perspective, look_at, identity, orthographic
 
 
 @dataclass
@@ -22,11 +22,15 @@ class OrbitCamera:
 
     yaw: float = np.deg2rad(45.0)
     pitch: float = np.deg2rad(25.0)
-    distance: float = np.deg2rad(700.0)
+    distance: float = 12.0
 
     fov_y_deg: float = 60.0
     near: float = 0.1
     far: float = 100.0
+
+    projection_mode: str = "perspective"
+    ortho_scale: float = 10.0
+    view_mode: str = "free"
 
     def clamp_pitch(self, lo: float = -1.5, hi: float = 1.5) -> None:
         self.pitch = max(lo, min(hi, self.pitch))
@@ -47,8 +51,12 @@ class OrbitCamera:
             step_out: float = 1.1
             ) -> None:
         """Görgő: zoom."""
-        self.distance *= (step_in if wheel_delta_y > 0 else step_out)
-        self.clamp_distance()
+        if self.projection_mode == "perspective":
+            self.distance *= (step_in if wheel_delta_y > 0 else step_out)
+            self.clamp_distance()
+        elif self.projection_mode == "orthographic":
+            self.ortho_scale *= (step_in if wheel_delta_y > 0 else step_out)
+            self.ortho_scale = max(0.1, min(200.0, self.ortho_scale))
 
     def eye(self) -> np.ndarray:
         """Kamera pozíció (eye) kiszámítása yaw/pitch/distance-ból."""
@@ -62,15 +70,72 @@ class OrbitCamera:
         ], dtype=np.float32)
 
     def view_matrix(self) -> np.ndarray:
-        return look_at(self.eye(), self.target, self.up)
+        eye = self.eye()
+        up = self.up
+
+        if self.view_mode == "top":
+            up = np.array([0.0, 0.0, -1.0], dtype=np.float32)
+        elif self.view_mode == "bottom":
+            up = np.array([0.0, 0.0, 1.0], dtype=np.float32)
+
+        return look_at(eye, self.target, up)
+
+    def set_front_view(self) -> None:
+        self.view_mode = "front"
+        self.projection_mode = "orthographic"
+        self.yaw = 0.0
+        self.pitch = 0.0
+
+    def set_top_view(self) -> None:
+        self.view_mode = "top"
+        self.projection_mode = "orthographic"
+        self.yaw = 0.0
+        self.pitch = np.pi / 2 - 1e-3
+
+    def set_bottom_view(self) -> None:
+        self.view_mode = "bottom"
+        self.projection_mode = "orthographic"
+        self.yaw = 0.0
+        self.pitch = -np.pi / 2 + 1e-3
+
+    def set_right_view(self) -> None:
+        self.view_mode = "right"
+        self.projection_mode = "orthographic"
+        self.yaw = np.pi / 2
+        self.pitch = 0.0
+
+    def set_isometric_view(self) -> None:
+        self.view_mode = "isometric"
+        self.projection_mode = "orthographic"
+        self.yaw = np.deg2rad(45.0)
+        self.pitch = np.deg2rad(35.264)
+
+    def set_persp_view(self) -> None:
+        self.view_mode = "free"
+        self.projection_mode = "perspective"
+        self.yaw = np.deg2rad(45.0)
+        self.pitch = np.deg2rad(25.0)
+        self.distance = 12.0
 
     def projection_matrix(self, aspect: float) -> np.ndarray:
-        return perspective(
-                np.deg2rad(self.fov_y_deg),
-                aspect,
-                self.near,
-                self.far
-                )
+        if self.projection_mode == "perspective":
+            return perspective(
+                    np.deg2rad(self.fov_y_deg),
+                    aspect,
+                    self.near,
+                    self.far
+                    )
+        elif self.projection_mode == "orthographic":
+            half_h = self.ortho_scale
+            half_w = half_h * aspect
+            return orthographic(
+                        -half_w,
+                        half_w,
+                        -half_h,
+                        half_h,
+                        self.near,
+                        self.far,
+                    )
 
     def mvp(
             self,

@@ -186,8 +186,9 @@ class GLViewport(QOpenGLWidget):
         self.last_pos = event.position()
 
         if event.buttons() & Qt.MouseButton.RightButton:
-            self.camera.orbit(dx, dy, sens=0.01)
-            self.update()
+            if self.camera.view_mode == "free":
+                self.camera.orbit(dx, dy, sens=0.01)
+                self.update()
 
     def wheelEvent(self, event):
         self.camera.zoom_wheel(event.angleDelta().y())

@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ui.styles import DARK_THEME
-from ui.controls_panel import ControlsPanel
+from ui.left_panel import LeftPanel
 from ui.right_panel import RightPanel
 from ui.menus import build_menus
 
@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.left_panel = ControlsPanel()
+        self.left_panel = LeftPanel()
         self.left_panel.set_scene(self.scene)
         self.right_panel = RightPanel(self.scene)
         self.left_panel.scene_changed.connect(self.right_panel.viewport.mark_scene_dirty)
@@ -48,9 +48,41 @@ class MainWindow(QMainWindow):
         self.right_panel.top_bar.add_cube_requested.connect(self.add_cube)
         self.right_panel.top_bar.add_sphere_requested.connect(self.add_sphere)
 
+        self.right_panel.top_bar.set_perspective_view_requested.connect(self.set_perspective_view)
+
+        self.right_panel.top_bar.set_ortho_front_view_requested.connect(self.set_ortho_front_view)
+        self.right_panel.top_bar.set_ortho_top_view_requested.connect(self.set_ortho_top_view)
+        self.right_panel.top_bar.set_ortho_bottom_view_requested.connect(self.set_ortho_bottom_view)
+        self.right_panel.top_bar.set_ortho_right_view_requested.connect(self.set_ortho_right_view)
+        self.right_panel.top_bar.set_ortho_isom_view_requested.connect(self.set_ortho_isom_view)
+
     @property
     def viewport(self):
         return self.right_panel.viewport
+
+    def set_perspective_view(self):
+        self.scene.camera.set_persp_view()
+        self.viewport.mark_scene_dirty()
+
+    def set_ortho_isom_view(self):
+        self.scene.camera.set_isometric_view()
+        self.viewport.mark_scene_dirty()
+
+    def set_ortho_front_view(self):
+        self.scene.camera.set_front_view()
+        self.viewport.mark_scene_dirty()
+
+    def set_ortho_top_view(self):
+        self.scene.camera.set_top_view()
+        self.viewport.mark_scene_dirty()
+
+    def set_ortho_bottom_view(self):
+        self.scene.camera.set_bottom_view()
+        self.viewport.mark_scene_dirty()
+
+    def set_ortho_right_view(self):
+        self.scene.camera.set_right_view()
+        self.viewport.mark_scene_dirty()
 
     def add_cube(self):
         self.scene.add_cube()
