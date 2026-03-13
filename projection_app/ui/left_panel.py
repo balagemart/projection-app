@@ -1,10 +1,11 @@
 import numpy as np
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QListWidget, QFormLayout,
-    QDoubleSpinBox, QSpinBox, QListWidgetItem, QHBoxLayout
+    QDoubleSpinBox, QSpinBox, QListWidgetItem, QHBoxLayout, QPushButton, QInputDialog
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from scene.scene import Scene, SceneObject
+from ui.widgets.drag_spinbox import DragDoubleSpinBox, DragIntSpinBox
 
 
 class LeftPanel(QWidget):
@@ -37,6 +38,25 @@ class LeftPanel(QWidget):
 
         # signals
         self.list_widget.currentItemChanged.connect(self.on_selection_changed)
+        self.list_widget.itemDoubleClicked.connect(self.rename_object)
+
+    def rename_object(self, item: QListWidgetItem):
+        obj_id = item.data(Qt.ItemDataRole.UserRole)
+
+        obj = self.scene.get_object(obj_id)
+
+        if obj is None:
+            return
+
+        new_name, ok = QInputDialog.getText(
+            self,
+            "Rename object",
+            "New name:",
+            text=obj.name
+        )
+        if ok and new_name.strip():
+            obj.name = new_name.strip()
+            self.refresh_objects()
 
     def set_scene(self, scene: Scene):
         self.scene = scene
@@ -48,9 +68,29 @@ class LeftPanel(QWidget):
         self.list_widget.clear()
 
         for obj in self.scene.objects:
-            item = QListWidgetItem(obj.name)
+            item = QListWidgetItem()
             item.setData(Qt.ItemDataRole.UserRole, obj.id)
             self.list_widget.addItem(item)
+
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(4, 2, 4, 2)
+
+            name_label = QLabel(obj.name)
+
+            delete_btn = QPushButton("del")
+
+            delete_btn.clicked.connect(
+                lambda _, obj_id=obj.id: self.delete_object(obj_id)
+            )
+
+            row_layout.addWidget(name_label)
+            row_layout.addStretch()
+            row_layout.addWidget(delete_btn)
+
+            item.setSizeHint(row_widget.sizeHint())
+
+            self.list_widget.setItemWidget(item, row_widget)
 
         if self.scene.selected_id is not None:
             for i in range(self.list_widget.count()):
@@ -58,6 +98,13 @@ class LeftPanel(QWidget):
                 if item.data(Qt.ItemDataRole.UserRole) == self.scene.selected_id:
                     self.list_widget.setCurrentItem(item)
                     break   # TODO BREAK NELKUL MAJD
+
+    def delete_object(self, obj_id):
+        if self.scene is None:
+            return
+        self.scene.remove_object(obj_id)
+        self.refresh_objects()
+        self.scene_changed.emit()
 
     def clear_properties(self):
         while self.properties_layout.rowCount():
@@ -80,7 +127,7 @@ class LeftPanel(QWidget):
         spins = []
         prefixes = ["X ", "Y ", "Z "]
         for prefix, value in zip(prefixes, values):
-            spin = QDoubleSpinBox(self)
+            spin = DragDoubleSpinBox(self)
             spin.setRange(min_value, max_value)
             spin.setDecimals(decimals)
             spin.setSingleStep(step)
@@ -191,7 +238,7 @@ class LeftPanel(QWidget):
         self.build_properties(obj)
 
     def _build_cube_properties(self, obj: SceneObject):
-        size_spin = QDoubleSpinBox()
+        size_spin = DragDoubleSpinBox()
         size_spin.setRange(0.1, 1000.0)
         size_spin.setDecimals(3)
         size_spin.setSingleStep(0.1)
@@ -202,17 +249,17 @@ class LeftPanel(QWidget):
         self.properties_layout.addRow("Size", size_spin)
 
     def _build_sphere_properties(self, obj: SceneObject):
-        radius_spin = QDoubleSpinBox(self)
+        radius_spin = DragDoubleSpinBox(self)
         radius_spin.setRange(0.1, 1000.0)
         radius_spin.setDecimals(3)
         radius_spin.setSingleStep(0.1)
         radius_spin.setValue(float(obj.params["radius"]))
 
-        slices_spin = QSpinBox(self)
+        slices_spin = DragIntSpinBox(self)
         slices_spin.setRange(3, 500)
         slices_spin.setValue(int(obj.params["slices"]))
 
-        stacks_spin = QSpinBox(self)
+        stacks_spin = DragIntSpinBox(self)
         stacks_spin.setRange(3, 500)
         stacks_spin.setValue(int(obj.params["stacks"]))
 
@@ -225,7 +272,7 @@ class LeftPanel(QWidget):
         self.properties_layout.addRow("Stacks", stacks_spin)
 
     def _build_imported_properties(self, obj: SceneObject):
-        size = QDoubleSpinBox()
+        size = DragDoubleSpinBox()
         # TODO matrix szorzassal size noveles
 
     # property change handlers

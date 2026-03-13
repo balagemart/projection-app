@@ -85,30 +85,45 @@ class OrbitCamera:
         self.projection_mode = "orthographic"
         self.yaw = 0.0
         self.pitch = 0.0
+        self.distance = 12.0
+        self.ortho_scale = 10.0
+        self.target = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
     def set_top_view(self) -> None:
         self.view_mode = "top"
         self.projection_mode = "orthographic"
         self.yaw = 0.0
         self.pitch = np.pi / 2 - 1e-3
+        self.distance = 12.0
+        self.ortho_scale = 10.0
+        self.target = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
     def set_bottom_view(self) -> None:
         self.view_mode = "bottom"
         self.projection_mode = "orthographic"
         self.yaw = 0.0
         self.pitch = -np.pi / 2 + 1e-3
+        self.distance = 12.0
+        self.ortho_scale = 10.0
+        self.target = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
     def set_right_view(self) -> None:
         self.view_mode = "right"
         self.projection_mode = "orthographic"
         self.yaw = np.pi / 2
         self.pitch = 0.0
+        self.distance = 12.0
+        self.ortho_scale = 10.0
+        self.target = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
     def set_isometric_view(self) -> None:
         self.view_mode = "isometric"
         self.projection_mode = "orthographic"
         self.yaw = np.deg2rad(45.0)
         self.pitch = np.deg2rad(35.264)
+        self.distance = 12.0
+        self.ortho_scale = 10.0
+        self.target = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
     def set_persp_view(self) -> None:
         self.view_mode = "free"

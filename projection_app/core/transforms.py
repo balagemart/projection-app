@@ -88,7 +88,7 @@ def perspective(
         aspect: float,
         near: float,
         far: float
-    ) -> np.ndarray:
+) -> np.ndarray:
     """
     Perspektív vetítési mátrix (jobbkezes rendszer).
     fov_y_rad: vertikális látószög radiánban
