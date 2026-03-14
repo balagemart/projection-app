@@ -42,27 +42,27 @@ def cube_indices() -> np.ndarray:
     12 háromszög -> 36 index.
     """
     return np.array([
-        # bottom (0,1,2,3)
+        # bottom (y = -s)
         0, 1, 2,
         0, 2, 3,
 
-        # top (4,5,6,7)
+        # top (y = +s)
         4, 6, 5,
         4, 7, 6,
 
-        # front (3,2,6,7)  z=+s
+        # front (z = +s)
         3, 2, 6,
         3, 6, 7,
 
-        # back (0,5,1,4)   z=-s
-        0, 5, 4,
-        0, 1, 5,
+        # back (z = -s)
+        0, 5, 1,
+        0, 4, 5,
 
-        # left (0,3,7,4)   x=-s
+        # left (x = -s)
         0, 3, 7,
         0, 7, 4,
 
-        # right (1,6,2,5)  x=+s
-        1, 6, 5,
-        1, 2, 6,
-    ], dtype=np.uint32)
+        # right (x = +s)
+        1, 6, 2,
+        1, 5, 6,
+        ], dtype=np.uint32)

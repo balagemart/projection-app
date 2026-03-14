@@ -29,8 +29,8 @@ def sphere_vertices(radius=1.0, stacks=20, slices=20, color=(0.2, 0.6, 1.0)):
             second = first + slices + 1
 
             indices.extend([
-                first, second, first + 1,
-                second, second + 1, first + 1
+                first, first + 1, second,
+                second, first + 1, second + 1
             ])
 
     return (

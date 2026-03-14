@@ -38,6 +38,7 @@ class SceneObject:
     rotation: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])  # radians
     scale: list[float] = field(default_factory=lambda: [1.0, 1.0, 1.0])
     visible: bool = True
+    show_normals: bool = False 
     geometry_dirty: bool = True
     transform_dirty: bool = True
     local_mesh_cache: MeshData | None = None

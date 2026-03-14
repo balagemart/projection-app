@@ -78,14 +78,19 @@ class LeftPanel(QWidget):
 
             name_label = QLabel(obj.name)
 
-            delete_btn = QPushButton("del")
-
+            delete_btn = QPushButton("D")
             delete_btn.clicked.connect(
                 lambda _, obj_id=obj.id: self.delete_object(obj_id)
             )
 
+            show_normals_toggle_btn = QPushButton("N")
+            show_normals_toggle_btn.clicked.connect(
+                lambda _, obj_id=obj.id: self.show_normals_toggle(obj_id)
+            )
+
             row_layout.addWidget(name_label)
             row_layout.addStretch()
+            row_layout.addWidget(show_normals_toggle_btn)
             row_layout.addWidget(delete_btn)
 
             item.setSizeHint(row_widget.sizeHint())
@@ -98,6 +103,12 @@ class LeftPanel(QWidget):
                 if item.data(Qt.ItemDataRole.UserRole) == self.scene.selected_id:
                     self.list_widget.setCurrentItem(item)
                     break   # TODO BREAK NELKUL MAJD
+
+    def show_normals_toggle(self, obj_id):
+        obj = self.scene.get_object(obj_id)
+        obj.show_normals = not obj.show_normals
+        self.scene_changed.emit()
+
 
     def delete_object(self, obj_id):
         if self.scene is None:

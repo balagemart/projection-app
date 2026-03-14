@@ -9,6 +9,7 @@ import OpenGL.GL as gl
 from render.mesh import Mesh
 from render.grid import create_grid
 from render.axes import create_axes
+from render.normals import build_face_normals
 from scene.scene import Scene
 
 
@@ -159,6 +160,7 @@ class GLViewport(QOpenGLWidget):
 
         for obj in self.scene.objects:
             mesh = obj.get_mesh()
+
             if mesh is not None:
                 verts = mesh.vertices
                 inds = mesh.indices
@@ -172,6 +174,9 @@ class GLViewport(QOpenGLWidget):
                         indices=inds,
                     )
                 )
+            if obj.show_normals:
+                normal_mesh = build_face_normals(verts, inds, components_per_vertex)
+                self._meshes.append(normal_mesh)
 
     # --- Input ---
     def mousePressEvent(self, event):
