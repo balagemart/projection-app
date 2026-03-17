@@ -12,8 +12,9 @@ class RightPanel(QWidget):
         super().__init__(parent)
         self.setObjectName("RightPane")
         self.top_bar = TopBar(self)
+
         self.viewport = GLViewport(self)
-        self.viewport.scene = scene  # összekötés
+        self.viewport.set_scene(scene)  # összekötés
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

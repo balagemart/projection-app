@@ -1,39 +1,49 @@
 import numpy as np
 
 
-def sphere_vertices(radius=1.0, stacks=20, slices=20, color=(0.2, 0.6, 1.0)):
-    vertices = []
-    indices = []
+def sphere_vertices(
+    radius: float = 1.0,
+    stacks: int = 20,
+    slices: int = 20,
+    color: tuple[float, float, float] = (0.2, 0.6, 1.0),
+) -> tuple[np.ndarray, np.ndarray]:
+    stacks = max(2, int(stacks))
+    slices = max(3, int(slices))
 
     r_col, g_col, b_col = color
 
-    for i in range(stacks + 1):
-        theta = np.pi * i / stacks
-        sin_t = np.sin(theta)
-        cos_t = np.cos(theta)
+    theta = np.linspace(0.0, np.pi, stacks + 1, dtype=np.float32)
+    phi = np.linspace(0.0, 2.0 * np.pi, slices + 1, dtype=np.float32)
 
-        for j in range(slices + 1):
-            phi = 2 * np.pi * j / slices
-            sin_p = np.sin(phi)
-            cos_p = np.cos(phi)
+    theta_grid, phi_grid = np.meshgrid(theta, phi, indexing="ij")
 
-            x = radius * sin_t * cos_p
-            y = radius * cos_t
-            z = radius * sin_p * sin_t
+    sin_t = np.sin(theta_grid)
+    cos_t = np.cos(theta_grid)
+    sin_p = np.sin(phi_grid)
+    cos_p = np.cos(phi_grid)
 
-            vertices.extend([x, y, z, r_col, g_col, b_col])
-    # index generalas
-    for i in range(stacks):
-        for j in range(slices):
-            first = i * (slices + 1) + j
-            second = first + slices + 1
+    x = radius * sin_t * cos_p
+    y = radius * cos_t
+    z = radius * sin_t * sin_p
 
-            indices.extend([
-                first, first + 1, second,
-                second, first + 1, second + 1
-            ])
+    positions = np.stack((x, y, z), axis=-1)  # (stacks+1, slices+1, 3)
 
-    return (
-        np.array(vertices, dtype=np.float32),
-        np.array(indices, dtype=np.uint32)
-    )
+    colors = np.empty_like(positions, dtype=np.float32)
+    colors[..., 0] = r_col
+    colors[..., 1] = g_col
+    colors[..., 2] = b_col
+
+    vertices = np.concatenate((positions, colors), axis=-1).reshape(-1).astype(np.float32)
+
+    row_starts = np.arange(stacks, dtype=np.uint32)[:, None] * (slices + 1)
+    col_offsets = np.arange(slices, dtype=np.uint32)[None, :]
+
+    first = row_starts + col_offsets
+    second = first + (slices + 1)
+
+    tri1 = np.stack((first, first + 1, second), axis=-1)
+    tri2 = np.stack((second, first + 1, second + 1), axis=-1)
+
+    indices = np.concatenate((tri1, tri2), axis=-1).reshape(-1).astype(np.uint32)
+
+    return vertices, indices

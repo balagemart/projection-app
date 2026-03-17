@@ -1,16 +1,20 @@
 from __future__ import annotations
 from pathlib import Path
+from enum import Enum
 
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 from PyQt6.QtCore import Qt
-
+import numpy as np
 import OpenGL.GL as gl
 
 from render.mesh import Mesh
 from render.grid import create_grid
 from render.axes import create_axes
 from render.normals import build_face_normals
-from scene.scene import Scene
+from scene.scene import Scene, SceneObject, PrimitiveType
+from core.camera import ViewMode, OrbitCamera
+from core.transforms import look_at, perspective, orthographic, identity
+from core.camera import ProjectionMode
 
 
 def _read_text(path: Path) -> str:
@@ -63,25 +67,26 @@ class GLViewport(QOpenGLWidget):
         self._program: int | None = None
         self._u_mvp_loc: int = -1
 
-        # --- Scene / camera ---
-        self.scene: Scene | None = None
+        # --- Scene ---
+        self._scene: Scene | None = None
+        self._current_camera: OrbitCamera | SceneObject = None
 
         # --- Rendered meshes (GPU oldali) ---
         self._meshes: list[Mesh] = []
         self._scene_dirty: bool = True
 
         # --- Input state ---
-        self.last_pos = None
+        self._last_pos = None
 
         # --- Overlays (viewport segédek) ---
         self.grid: Mesh | None = None
         self.axes: Mesh | None = None
 
     @property
-    def camera(self):
-        if self.scene is None:
+    def editor_camera(self) -> OrbitCamera:
+        if self._scene is None:
             raise RuntimeError("GLViewport.scene nincs beállítva.")
-        return self.scene.camera
+        return self._scene.editor_camera
 
     # --- Qt OpenGL lifecycle ---
     def initializeGL(self) -> None:
@@ -113,11 +118,11 @@ class GLViewport(QOpenGLWidget):
 
     def paintGL(self) -> None:
         # Itt biztosan van aktív GL context
-        if self._program is None or self.scene is None:
+        if self._program is None or self._scene is None:
             return
 
         if self._scene_dirty:
-            self.rebuild_meshes_from_scene()
+            self._rebuild_meshes_from_scene()
             self._scene_dirty = False
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
@@ -125,7 +130,14 @@ class GLViewport(QOpenGLWidget):
         w, h = self.width(), self.height()
         aspect = w / max(1.0, float(h))
 
-        mvp = self.camera.mvp(aspect)
+        cam = self._current_camera
+        if cam is None:
+            return
+
+        if isinstance(cam, OrbitCamera):
+            mvp = cam.mvp(aspect, model=None)
+        else:
+            mvp = self._build_scene_camera_mvp(cam, aspect)
 
         gl.glUseProgram(self._program)
         gl.glUniformMatrix4fv(self._u_mvp_loc, 1, gl.GL_FALSE, mvp.T)
@@ -142,59 +154,137 @@ class GLViewport(QOpenGLWidget):
 
         gl.glUseProgram(0)
 
-    # --- Scene sync ---
+    # --- Public Scene API ---
+    def set_scene(self, scene: Scene) -> None:
+        self._scene = scene
+        self._current_camera = scene.editor_camera
+        self._scene_dirty = True
+        self.update()
+
     def mark_scene_dirty(self) -> None:
         self._scene_dirty = True
         self.update()
 
-    def rebuild_meshes_from_scene(self) -> None:
+    def set_current_camera(self, cam: OrbitCamera | SceneObject) -> None:
+        self._current_camera = cam
+        self.update()
+
+    # --- Private helper ---
+    def _rebuild_meshes_from_scene(self) -> None:
         """
         Scene → GPU Mesh-ek
         Csak paintGL/initializeGL alatt hívd (amikor van GL context).
         """
         self._meshes.clear()
 
-        # scene biztosan nem None itt, de maradjon safe
-        if self.scene is None:
+        # scene biztosan nem None itt
+        if self._scene is None:
             return
 
-        for obj in self.scene.objects:
+        for obj in self._scene.objects:
             mesh = obj.get_mesh()
 
-            if mesh is not None:
-                verts = mesh.vertices
-                inds = mesh.indices
-                components_per_vertex = mesh.components_per_vertex
+            if mesh is None:
+                continue
+            verts = mesh.vertices
+            inds = mesh.indices
+            components_per_vertex = mesh.components_per_vertex
+            primitive = self._to_gl_primitive(mesh.primitive)
 
-                self._meshes.append(
-                    Mesh(
-                        vertices=verts,
-                        components_per_vertex=components_per_vertex,
-                        primitive=gl.GL_TRIANGLES,
-                        indices=inds,
-                    )
+            self._meshes.append(
+                Mesh(
+                    vertices=verts,
+                    components_per_vertex=components_per_vertex,
+                    primitive=primitive,
+                    indices=inds,
                 )
+            )
             if obj.show_normals:
                 normal_mesh = build_face_normals(verts, inds, components_per_vertex)
                 self._meshes.append(normal_mesh)
 
-    # --- Input ---
-    def mousePressEvent(self, event):
-        self.last_pos = event.position()
+    def _to_gl_primitive(self, primitive: PrimitiveType):
+        if primitive == PrimitiveType.TRIANGLES:
+            return gl.GL_TRIANGLES
+        elif primitive == PrimitiveType.LINES:
+            return gl.GL_LINES
+        else:
+            raise ValueError(f"Unsupported primitive: {primitive}")
 
-    def mouseMoveEvent(self, event):
-        if self.last_pos is None:
+    def _build_scene_camera_mvp(
+        self,
+        camera_obj: SceneObject,
+        aspect: float
+    ) -> np.ndarray:
+        position = np.array(camera_obj.position, dtype=np.float32)
+        rotation = np.array(camera_obj.rotation, dtype=np.float32)
+
+        rx, ry, rz = rotation
+
+        # Előrenéző irány kiszámítása Euler szögekből
+        cx, sx = np.cos(rx), np.sin(rx)
+        cy, sy = np.cos(ry), np.sin(ry)
+
+        forward = np.array([
+            sy * cx,
+            -sx,
+            cy * cx,
+        ], dtype=np.float32)
+
+        target = position + forward
+        up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+
+        view = look_at(position, target, up)
+
+        projection_mode = camera_obj.params["projection_mode"]
+        near = float(camera_obj.params["near"])
+        far = float(camera_obj.params["far"])
+
+        if projection_mode == ProjectionMode.PERSPECTIVE:
+            fov_y = float(camera_obj.params["fov_y"])
+            projection = perspective(
+                np.deg2rad(fov_y),
+                aspect,
+                near,
+                far,
+            )
+        else:
+            ortho_scale = float(camera_obj.params["ortho_scale"])
+            half_h = ortho_scale
+            half_w = half_h * aspect
+
+            projection = orthographic(
+                -half_w,
+                half_w,
+                -half_h,
+                half_h,
+                near,
+                far,
+            )
+
+        return projection @ view
+
+    # --- Input events ---
+    def mousePressEvent(self, event) -> None:
+        self._last_pos = event.position()
+
+    def mouseMoveEvent(self, event) -> None:
+        if self._last_pos is None:
             return
 
-        dx = event.position().x() - self.last_pos.x()
-        dy = event.position().y() - self.last_pos.y()
-        self.last_pos = event.position()
+        dx = event.position().x() - self._last_pos.x()
+        dy = event.position().y() - self._last_pos.y()
+        self._last_pos = event.position()
 
-        if event.buttons() & Qt.MouseButton.RightButton:
-            if self.camera.view_mode == "free":
-                self.camera.orbit(dx, dy, sens=0.01)
-                self.update()
+        cam = self._current_camera
+        if isinstance(cam, OrbitCamera):
+            if event.buttons() & Qt.MouseButton.RightButton:
+                if cam.view_mode == ViewMode.FREE:
+                    cam.orbit(dx, dy, sens=0.01)
+                    self.update()
 
-    def wheelEvent(self, event):
-        self.camera.zoom_wheel(event.angleDelta().y())
-        self.update()
+    def wheelEvent(self, event) -> None:
+        cam = self._current_camera
+        if isinstance(cam, OrbitCamera):
+            cam.zoom_wheel(event.angleDelta().y())
+            self.update()

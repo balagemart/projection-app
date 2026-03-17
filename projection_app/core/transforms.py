@@ -1,7 +1,13 @@
 import numpy as np
 
 
-def translation_matrix(position) -> np.ndarray:
+def identity() -> np.ndarray:
+    """4x4 identity matrix."""
+    return np.eye(4, dtype=np.float32)
+
+
+def translation_matrix(position: np.ndarray) -> np.ndarray:
+    """4x4 translation matrix."""
     tx, ty, tz = position
 
     T = np.eye(4, dtype=np.float32)
@@ -13,7 +19,8 @@ def translation_matrix(position) -> np.ndarray:
     return T
 
 
-def scale_matrix(scale) -> np.ndarray:
+def scale_matrix(scale: np.ndarray) -> np.ndarray:
+    """4x4 scale matrix."""
     sx, sy, sz = scale
 
     S = np.eye(4, dtype=np.float32)
@@ -25,7 +32,8 @@ def scale_matrix(scale) -> np.ndarray:
     return S
 
 
-def rotation_matrix_x(angle) -> np.ndarray:
+def rotation_matrix_x(angle: float) -> np.ndarray:
+    """4x4 rotation matrix on the x axes"""
     c = np.cos(angle)
     s = np.sin(angle)
 
@@ -39,7 +47,8 @@ def rotation_matrix_x(angle) -> np.ndarray:
     return Rx
 
 
-def rotation_matrix_y(angle) -> np.ndarray:
+def rotation_matrix_y(angle: float) -> np.ndarray:
+    """4x4 rotation matrix on the y axes"""
     c = np.cos(angle)
     s = np.sin(angle)
 
@@ -53,7 +62,8 @@ def rotation_matrix_y(angle) -> np.ndarray:
     return Ry
 
 
-def rotation_matrix_z(angle) -> np.ndarray:
+def rotation_matrix_z(angle: float) -> np.ndarray:
+    """4x4 rotation matrix on the z axes"""
     c = np.cos(angle)
     s = np.sin(angle)
 
@@ -67,7 +77,11 @@ def rotation_matrix_z(angle) -> np.ndarray:
     return Rz
 
 
-def model_matrix(position, rotation, scale) -> np.ndarray:
+def model_matrix(
+        position: np.ndarray,
+        rotation: np.ndarray,
+        scale: np.ndarray
+) -> np.ndarray:
     T = translation_matrix(position)
     S = scale_matrix(scale)
 
@@ -81,50 +95,6 @@ def model_matrix(position, rotation, scale) -> np.ndarray:
     M = T @ R @ S
 
     return M
-
-
-def perspective(
-        fov_y_rad: float,
-        aspect: float,
-        near: float,
-        far: float
-) -> np.ndarray:
-    """
-    Perspektív vetítési mátrix (jobbkezes rendszer).
-    fov_y_rad: vertikális látószög radiánban
-    aspect: szélesség / magasság
-    near, far: vágósíkok
-    """
-    f = 1.0 / np.tan(fov_y_rad / 2.0)
-
-    m = np.zeros((4, 4), dtype=np.float32)
-    m[0, 0] = f / aspect
-    m[1, 1] = f
-    m[2, 2] = (far + near) / (near - far)
-    m[2, 3] = (2.0 * far * near) / (near - far)
-    m[3, 2] = -1.0
-
-    return m
-
-
-def orthographic(
-        left,
-        right,
-        bottom,
-        top,
-        near,
-        far
-        ) -> np.ndarray:
-    m = np.eye(4, dtype=np.float32)
-    m[0, 0] = 2 / (right - left)
-    m[1, 1] = 2 / (top - bottom)
-    m[2, 2] = -2 / (far - near)
-
-    m[0, 3] = -1 * ((right + left) / (right - left))
-    m[1, 3] = -1 * ((top + bottom) / (top - bottom))
-    m[2, 3] = -1 * ((far + near) / (far - near))
-
-    return m
 
 
 def look_at(eye: np.ndarray, target: np.ndarray, up: np.ndarray) -> np.ndarray:
@@ -156,6 +126,45 @@ def look_at(eye: np.ndarray, target: np.ndarray, up: np.ndarray) -> np.ndarray:
     return m
 
 
-def identity() -> np.ndarray:
-    """4x4 egységmátrix."""
-    return np.eye(4, dtype=np.float32)
+def perspective(
+        fov_y_rad: float,
+        aspect: float,
+        near: float,
+        far: float
+) -> np.ndarray:
+    """
+    Perspektív vetítési mátrix (jobbkezes rendszer).
+    fov_y_rad: vertikális látószög radiánban
+    aspect: szélesség / magasság
+    near, far: vágósíkok
+    """
+    f = 1.0 / np.tan(fov_y_rad / 2.0)
+
+    m = np.zeros((4, 4), dtype=np.float32)
+    m[0, 0] = f / aspect
+    m[1, 1] = f
+    m[2, 2] = (far + near) / (near - far)
+    m[2, 3] = (2.0 * far * near) / (near - far)
+    m[3, 2] = -1.0
+
+    return m
+
+
+def orthographic(
+        left: float,
+        right: float,
+        bottom: float,
+        top: float,
+        near: float,
+        far
+) -> np.ndarray:
+    m = np.eye(4, dtype=np.float32)
+    m[0, 0] = 2 / (right - left)
+    m[1, 1] = 2 / (top - bottom)
+    m[2, 2] = -2 / (far - near)
+
+    m[0, 3] = -((right + left) / (right - left))
+    m[1, 3] = -((top + bottom) / (top - bottom))
+    m[2, 3] = -((far + near) / (far - near))
+
+    return m

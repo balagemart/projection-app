@@ -3,44 +3,12 @@ import OpenGL.GL as gl
 from render.mesh import Mesh
 
 
-def build_face_normals(vertices, indices, components_per_vertex, length=1.0) -> Mesh:
-    # format: kp color vp color
-    # verts = []
-    # c = components_per_vertex
-    #
-    # for i in range(0, len(indices), 3):
-    #     i0 = indices[i]
-    #     i1 = indices[i+1]
-    #     i2 = indices[i+2]
-    #
-    #     p0 = np.array(vertices[i0*c: i0*c+3], dtype=np.float32)
-    #     p1 = np.array(vertices[i1*c: i1*c+3], dtype=np.float32)
-    #     p2 = np.array(vertices[i2*c: i2*c+3], dtype=np.float32)
-    #
-    #     e1 = p1 - p0
-    #     e2 = p2 - p0
-    #
-    #     normal = np.cross(e1, e2)
-    #     norm_length = np.linalg.norm(normal)
-    #     if norm_length < 1e-8:   # length < 0, 1e-8 in case of float value is close to zero
-    #         continue
-    #
-    #     normal = normal / norm_length
-    #
-    #     center = (p0 + p1 + p2) / 3
-    #     end = center + length * normal
-    #
-    #     verts.extend([center[0], center[1], center[2], 1.0, 0.0, 0.0])
-    #     verts.extend([end[0], end[1], end[2], 1.0, 0.0, 0.0])
-    #
-    # verts = np.array(verts, dtype=np.float32)
-    #
-    # return Mesh(
-    #     vertices=verts,
-    #     components_per_vertex=6,
-    #     primitive=gl.GL_LINES
-    # )
-
+def build_face_normals(
+    vertices,
+    indices,
+    components_per_vertex,
+    length=1.0
+) -> Mesh:
     # flat vertex tömb -> (vertex_count, components_per_vertex)
     verts2d = np.asarray(vertices, dtype=np.float32).reshape(-1, components_per_vertex)
 

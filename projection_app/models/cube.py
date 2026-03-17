@@ -32,7 +32,7 @@ def cube_vertices_per_vertex_colors(size: float = 1.0) -> np.ndarray:
 
     data = []
     for (x, y, z), (r, g, b) in zip(corners, colors):
-        data += [x, y, z, r, g, b]
+        data.extend([x, y, z, r, g, b])
 
     return np.array(data, dtype=np.float32)
 

@@ -3,9 +3,13 @@ import OpenGL.GL as gl
 from render.mesh import Mesh
 
 
-def create_grid(size=30, step=1.0, color=(0.55, 0.55, 0.55)) -> Mesh:
+def create_grid(
+    size: int = 30,
+    step: float = 1.0,
+    color: tuple[float, float, float] = (0.55, 0.55, 0.55)
+) -> Mesh:
     r, g, b = color
-    data = []
+    data: list[list[float]] = []
 
     for i in range(-size, size + 1):
         # X irányú vonal: (-size,0,i) -> (size,0,i)
@@ -13,8 +17,8 @@ def create_grid(size=30, step=1.0, color=(0.55, 0.55, 0.55)) -> Mesh:
         data += [size*step, 0.0, i*step, r, g, b]
 
         # Z irányú vonal: (i,0,-size) -> (i,0,size)
-        data += [i*step, 0.0, -size*step, r, g, b]
-        data += [i*step, 0.0,  size*step, r, g, b]
+        data.extend([i*step, 0.0, -size*step, r, g, b])
+        data.extend([i*step, 0.0,  size*step, r, g, b])
 
     vertices = np.array(data, dtype=np.float32)
     return Mesh(

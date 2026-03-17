@@ -8,12 +8,14 @@ from PyQt6.QtCore import pyqtSignal
 class TopBar(QWidget):
     add_cube_requested = pyqtSignal()
     add_sphere_requested = pyqtSignal()
+    add_camera_requested = pyqtSignal()
     set_perspective_view_requested = pyqtSignal()
     set_ortho_front_view_requested = pyqtSignal()
     set_ortho_top_view_requested = pyqtSignal()
     set_ortho_bottom_view_requested = pyqtSignal()
     set_ortho_right_view_requested = pyqtSignal()
     set_ortho_isom_view_requested = pyqtSignal()
+    set_scene_cam_view_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -69,6 +71,14 @@ class TopBar(QWidget):
         act_isom_view = QAction("Isometric", self)
         act_isom_view.triggered.connect(self.set_ortho_isom_view_requested.emit)
 
+        act_camera = QAction("Camera", self)
+        act_camera.triggered.connect(self.add_camera_requested.emit)
+        geom_menu.addAction(act_camera)
+
+        scene_cam_btn = QPushButton(self)
+        scene_cam_btn.setText("Scene Camera")
+        scene_cam_btn.clicked.connect(self.set_scene_cam_view_requested.emit)
+
         ortho_menu.addAction(act_front_view)
         ortho_menu.addAction(act_top_view)
         ortho_menu.addAction(act_bottom_view)
@@ -78,5 +88,6 @@ class TopBar(QWidget):
 
         layout.addWidget(persp_btn)
         layout.addWidget(ortho_btn)
+        layout.addWidget(scene_cam_btn)
 
         layout.addStretch(1)

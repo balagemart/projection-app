@@ -109,7 +109,6 @@ class LeftPanel(QWidget):
         obj.show_normals = not obj.show_normals
         self.scene_changed.emit()
 
-
     def delete_object(self, obj_id):
         if self.scene is None:
             return
@@ -152,11 +151,11 @@ class LeftPanel(QWidget):
     def build_properties(self, obj: SceneObject):
         self.clear_properties()
         self.current_object = obj
-        if obj.type == "cube":
+        if obj.obj_type == "cube":
             self._build_cube_properties(obj)
-        elif obj.type == "sphere":
+        elif obj.obj_type == "sphere":
             self._build_sphere_properties(obj)
-        elif obj.type == "imported":
+        elif obj.obj_type == "imported":
             self._build_imported_properties(obj)
 
         self._build_transform_properties(obj)

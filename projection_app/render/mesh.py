@@ -6,16 +6,6 @@ import numpy as np
 import OpenGL.GL as gl
 
 
-@dataclass
-class VertexLayout:
-    """
-    Egyszerű layout leírás:
-    - position: mindig location 0 (vec3)
-    - ha components_per_vertex == 6: color is van location 1 (vec3)
-    """
-    components_per_vertex: int = 3  # 3: xyz, 6: xyz rgb
-
-
 class Mesh:
     """
     Mesh VAO+VBO (+ opcionális EBO).
@@ -36,17 +26,17 @@ class Mesh:
         primitive: int = gl.GL_TRIANGLES,
         indices: np.ndarray | None = None,
     ):
-        # --- vertices normalize ---
+        # --- Vertices normalize ---
         if vertices.dtype != np.float32:
             vertices = vertices.astype(np.float32, copy=False)
 
         if components_per_vertex not in (3, 6):
             raise ValueError("components_per_vertex must be 3 or 6")
 
-        self._components = components_per_vertex
-        self._primitive = primitive
+        self._components: int = components_per_vertex
+        self._primitive: int = primitive
 
-        # --- indices normalize ---
+        # --- Indices normalize ---
         self._has_indices = indices is not None
         self._index_count = 0
         self._index_type = None  # gl.GL_UNSIGNED_INT
@@ -54,10 +44,15 @@ class Mesh:
         if self._has_indices:
             if indices.dtype != np.uint32:
                 indices = indices.astype(np.uint32, copy=False)
-            self._index_count = int(indices.size)
+
+            self._index_count = indices.size
             self._index_type = gl.GL_UNSIGNED_INT
         else:
-            self._vertex_count = int(len(vertices) / components_per_vertex)
+            if len(vertices) % components_per_vertex != 0:
+                raise ValueError(
+                    "Vertex buffer size is not divisible by components_per_vertex"
+                )
+            self._vertex_count = int(len(vertices) // components_per_vertex)
 
         # --- GPU objects ---
         self._vao = gl.glGenVertexArrays(1)
