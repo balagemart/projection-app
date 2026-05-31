@@ -1,20 +1,17 @@
 from __future__ import annotations
 from pathlib import Path
-from enum import Enum
 
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 from PyQt6.QtCore import Qt
-import numpy as np
 import OpenGL.GL as gl
 
 from render.mesh import Mesh
 from render.grid import create_grid
 from render.axes import create_axes
 from render.normals import build_face_normals
-from scene.scene import Scene, SceneObject, PrimitiveType
-from core.camera import ViewMode, OrbitCamera
-from core.transforms import look_at, perspective, orthographic, identity
-from core.camera import ProjectionMode
+from geometry.mesh_data import PrimitiveType
+from scene.scene import Scene
+from core.camera import Camera, ViewMode, OrbitCamera
 
 
 def _read_text(path: Path) -> str:
@@ -69,7 +66,7 @@ class GLViewport(QOpenGLWidget):
 
         # --- Scene ---
         self._scene: Scene | None = None
-        self._current_camera: OrbitCamera | SceneObject = None
+        self._current_camera: Camera | None = None
 
         # --- Rendered meshes (GPU oldali) ---
         self._meshes: list[Mesh] = []
@@ -134,10 +131,7 @@ class GLViewport(QOpenGLWidget):
         if cam is None:
             return
 
-        if isinstance(cam, OrbitCamera):
-            mvp = cam.mvp(aspect, model=None)
-        else:
-            mvp = self._build_scene_camera_mvp(cam, aspect)
+        mvp = cam.projection_matrix(aspect) @ cam.view_matrix()
 
         gl.glUseProgram(self._program)
         gl.glUniformMatrix4fv(self._u_mvp_loc, 1, gl.GL_FALSE, mvp.T)
@@ -165,7 +159,7 @@ class GLViewport(QOpenGLWidget):
         self._scene_dirty = True
         self.update()
 
-    def set_current_camera(self, cam: OrbitCamera | SceneObject) -> None:
+    def set_current_camera(self, cam: Camera) -> None:
         self._current_camera = cam
         self.update()
 
@@ -210,59 +204,6 @@ class GLViewport(QOpenGLWidget):
             return gl.GL_LINES
         else:
             raise ValueError(f"Unsupported primitive: {primitive}")
-
-    def _build_scene_camera_mvp(
-        self,
-        camera_obj: SceneObject,
-        aspect: float
-    ) -> np.ndarray:
-        position = np.array(camera_obj.position, dtype=np.float32)
-        rotation = np.array(camera_obj.rotation, dtype=np.float32)
-
-        rx, ry, rz = rotation
-
-        # Előrenéző irány kiszámítása Euler szögekből
-        cx, sx = np.cos(rx), np.sin(rx)
-        cy, sy = np.cos(ry), np.sin(ry)
-
-        forward = np.array([
-            sy * cx,
-            -sx,
-            cy * cx,
-        ], dtype=np.float32)
-
-        target = position + forward
-        up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
-
-        view = look_at(position, target, up)
-
-        projection_mode = camera_obj.params["projection_mode"]
-        near = float(camera_obj.params["near"])
-        far = float(camera_obj.params["far"])
-
-        if projection_mode == ProjectionMode.PERSPECTIVE:
-            fov_y = float(camera_obj.params["fov_y"])
-            projection = perspective(
-                np.deg2rad(fov_y),
-                aspect,
-                near,
-                far,
-            )
-        else:
-            ortho_scale = float(camera_obj.params["ortho_scale"])
-            half_h = ortho_scale
-            half_w = half_h * aspect
-
-            projection = orthographic(
-                -half_w,
-                half_w,
-                -half_h,
-                half_h,
-                near,
-                far,
-            )
-
-        return projection @ view
 
     # --- Input events ---
     def mousePressEvent(self, event) -> None:

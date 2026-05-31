@@ -65,8 +65,8 @@ class MainWindow(QMainWindow):
     # --- Private helpers ---
     def _set_scene_cam_view(self) -> None:
         cam = self.scene.get_selected_camera()
-        if cam is not None:
-            self.viewport.set_current_camera(cam)
+        if cam is not None and cam.camera is not None:
+            self.viewport.set_current_camera(cam.camera)
             self._refresh_view()
         else:
             self._set_perspective_view()    # Most ez miatt ha nincs camera es ranyomsz akkor alap allasba all az edit camera

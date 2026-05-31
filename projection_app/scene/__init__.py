@@ -1,3 +1,5 @@
+from .entity import ObjectType, SceneObject
 from .scene import Scene
+from .transform import Transform
 
-__all__ = ["Scene"]
+__all__ = ["ObjectType", "Scene", "SceneObject", "Transform"]

@@ -4,7 +4,9 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox, QSpinBox, QListWidgetItem, QHBoxLayout, QPushButton, QInputDialog
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from scene.scene import Scene, SceneObject
+from geometry.sources import CubeGeometry, SphereGeometry
+from scene.entity import ObjectType, SceneObject
+from scene.scene import Scene
 from ui.widgets.drag_spinbox import DragDoubleSpinBox, DragIntSpinBox
 
 
@@ -151,11 +153,11 @@ class LeftPanel(QWidget):
     def build_properties(self, obj: SceneObject):
         self.clear_properties()
         self.current_object = obj
-        if obj.obj_type == "cube":
+        if obj.obj_type == ObjectType.CUBE:
             self._build_cube_properties(obj)
-        elif obj.obj_type == "sphere":
+        elif obj.obj_type == ObjectType.SPHERE:
             self._build_sphere_properties(obj)
-        elif obj.obj_type == "imported":
+        elif obj.obj_type == ObjectType.IMPORTED:
             self._build_imported_properties(obj)
 
         self._build_transform_properties(obj)
@@ -164,7 +166,7 @@ class LeftPanel(QWidget):
         if self.current_object is None:
             return
 
-        self.current_object.position[axis] = float(value)
+        self.current_object.transform.position[axis] = float(value)
         self.current_object.transform_dirty = True
         self.scene_changed.emit()
 
@@ -172,7 +174,7 @@ class LeftPanel(QWidget):
         if self.current_object is None:
             return None
 
-        self.current_object.rotation[axis] = float(np.deg2rad(value))
+        self.current_object.transform.rotation[axis] = float(np.deg2rad(value))
         self.current_object.transform_dirty = True
         self.scene_changed.emit()
 
@@ -180,18 +182,18 @@ class LeftPanel(QWidget):
         if self.current_object is None:
             return
 
-        self.current_object.scale[axis] = float(value)
+        self.current_object.transform.scale[axis] = float(value)
         self.current_object.transform_dirty = True
         self.scene_changed.emit()
 
     def _build_transform_properties(self, obj: SceneObject):
         pos_row, pos_spins = self._generate_xyz_spinboxes(
-                    obj.position,
+                    obj.transform.position,
                     min_value=-1000.0,
                     max_value=1000.0,
                     step=0.1,
                 )
-        rot_deg = [np.rad2deg(v) for v in obj.rotation]
+        rot_deg = [np.rad2deg(v) for v in obj.transform.rotation]
         rot_row, rot_spins = self._generate_xyz_spinboxes(
                     rot_deg,
                     min_value=-360.0,
@@ -199,7 +201,7 @@ class LeftPanel(QWidget):
                     step=0.1,
                 )
         scale_row, scale_spins = self._generate_xyz_spinboxes(
-                    obj.scale,
+                    obj.transform.scale,
                     min_value=0.01,
                     max_value=1000.0,
                     step=0.1
@@ -248,30 +250,36 @@ class LeftPanel(QWidget):
         self.build_properties(obj)
 
     def _build_cube_properties(self, obj: SceneObject):
+        if not isinstance(obj.geometry, CubeGeometry):
+            return
+
         size_spin = DragDoubleSpinBox()
         size_spin.setRange(0.1, 1000.0)
         size_spin.setDecimals(3)
         size_spin.setSingleStep(0.1)
-        size_spin.setValue(float(obj.params["size"]))
+        size_spin.setValue(float(obj.geometry.size))
 
         size_spin.valueChanged.connect(self.on_cube_size_changed)
 
         self.properties_layout.addRow("Size", size_spin)
 
     def _build_sphere_properties(self, obj: SceneObject):
+        if not isinstance(obj.geometry, SphereGeometry):
+            return
+
         radius_spin = DragDoubleSpinBox(self)
         radius_spin.setRange(0.1, 1000.0)
         radius_spin.setDecimals(3)
         radius_spin.setSingleStep(0.1)
-        radius_spin.setValue(float(obj.params["radius"]))
+        radius_spin.setValue(float(obj.geometry.radius))
 
         slices_spin = DragIntSpinBox(self)
         slices_spin.setRange(3, 500)
-        slices_spin.setValue(int(obj.params["slices"]))
+        slices_spin.setValue(int(obj.geometry.slices))
 
         stacks_spin = DragIntSpinBox(self)
         stacks_spin.setRange(3, 500)
-        stacks_spin.setValue(int(obj.params["stacks"]))
+        stacks_spin.setValue(int(obj.geometry.stacks))
 
         radius_spin.valueChanged.connect(self.on_sphere_radius_changed)
         slices_spin.valueChanged.connect(self.on_sphere_slices_changed)
@@ -290,7 +298,10 @@ class LeftPanel(QWidget):
         if self.current_object is None:
             return
 
-        self.current_object.params["size"] = float(value)
+        if not isinstance(self.current_object.geometry, CubeGeometry):
+            return
+
+        self.current_object.geometry.size = float(value)
         self.current_object.geometry_dirty = True
         self.scene_changed.emit()
 
@@ -298,7 +309,10 @@ class LeftPanel(QWidget):
         if self.current_object is None:
             return
 
-        self.current_object.params["radius"] = float(value)
+        if not isinstance(self.current_object.geometry, SphereGeometry):
+            return
+
+        self.current_object.geometry.radius = float(value)
         self.current_object.geometry_dirty = True
         self.scene_changed.emit()
 
@@ -306,7 +320,10 @@ class LeftPanel(QWidget):
         if self.current_object is None:
             return
 
-        self.current_object.params["stacks"] = int(value)
+        if not isinstance(self.current_object.geometry, SphereGeometry):
+            return
+
+        self.current_object.geometry.stacks = int(value)
         self.current_object.geometry_dirty = True
         self.scene_changed.emit()
 
@@ -314,6 +331,9 @@ class LeftPanel(QWidget):
         if self.current_object is None:
             return
 
-        self.current_object.params["slices"] = int(value)
+        if not isinstance(self.current_object.geometry, SphereGeometry):
+            return
+
+        self.current_object.geometry.slices = int(value)
         self.current_object.geometry_dirty = True
         self.scene_changed.emit()
