@@ -11,10 +11,10 @@ from ui.styles import DARK_THEME
 from ui.left_panel import LeftPanel
 from ui.right_panel import RightPanel
 from ui.menus import build_menus
+from ui.viewport_grid import ViewportGrid
 from scene.scene import Scene
 from scene.factories import create_camera, create_cube, create_imported_mesh, create_sphere
 from io_utils.obj_loader import load_obj
-from render.gl_viewport import GLViewport
 
 
 class MainWindow(QMainWindow):
@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         self.left_panel = LeftPanel()
         self.left_panel.set_scene(self.scene)
         self.right_panel = RightPanel(self.scene)
-        self.left_panel.scene_changed.connect(self.viewport.mark_scene_dirty)
+        self.left_panel.scene_changed.connect(self.viewport_grid.mark_scene_dirty)
 
         layout.addWidget(self.left_panel, 1)
         layout.addWidget(self.right_panel, 4)
@@ -58,23 +58,27 @@ class MainWindow(QMainWindow):
         self.right_panel.top_bar.set_ortho_isom_view_requested.connect(self._set_isometric_view)
         self.right_panel.top_bar.set_scene_cam_view_requested.connect(self._set_scene_cam_view)
         self.right_panel.top_bar.add_camera_requested.connect(self._add_camera)
+        self.right_panel.top_bar.set_multi_view_toggle_requested.connect(self._set_multi_view_toggle_requested)
 
     @property
-    def viewport(self) -> GLViewport:
-        return self.right_panel.viewport
+    def viewport_grid(self) -> ViewportGrid:
+        return self.right_panel.viewport_grid
 
     # --- Private helpers ---
+    def _set_multi_view_toggle_requested(self) -> None:
+        self.right_panel.set_viewport_grid_mode_toggle()
+
     def _set_scene_cam_view(self) -> None:
         cam = self.scene.get_selected_camera()
         if cam is not None and cam.camera is not None:
-            self.viewport.set_current_camera(cam.camera)
+            self.viewport_grid.set_current_camera(cam.camera)
             self._refresh_view()
         else:
             self._set_perspective_view()    # Most ez miatt ha nincs camera es ranyomsz akkor alap allasba all az edit camera
 
     def _set_perspective_view(self) -> None:
         self.scene.editor_camera.set_perspective_view()
-        self.viewport.set_current_camera(self.scene.editor_camera)
+        self.viewport_grid.set_current_camera(self.scene.editor_camera)
         self._refresh_view()
 
     def _set_isometric_view(self) -> None:
@@ -131,4 +135,4 @@ class MainWindow(QMainWindow):
         self._refresh_view()
 
     def _refresh_view(self) -> None:
-        self.viewport.mark_scene_dirty()
+        self.viewport_grid.mark_scene_dirty()

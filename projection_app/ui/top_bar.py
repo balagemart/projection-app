@@ -16,6 +16,7 @@ class TopBar(QWidget):
     set_ortho_right_view_requested = pyqtSignal()
     set_ortho_isom_view_requested = pyqtSignal()
     set_scene_cam_view_requested = pyqtSignal()
+    set_multi_view_toggle_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -86,8 +87,13 @@ class TopBar(QWidget):
         ortho_menu.addAction(act_isom_view)
         ortho_btn.setMenu(ortho_menu)
 
+        multi_view_btn = QPushButton(self)
+        multi_view_btn.setText("Multi View")
+        multi_view_btn.clicked.connect(self.set_multi_view_toggle_requested.emit)
+
         layout.addWidget(persp_btn)
         layout.addWidget(ortho_btn)
         layout.addWidget(scene_cam_btn)
+        layout.addWidget(multi_view_btn)
 
         layout.addStretch(1)

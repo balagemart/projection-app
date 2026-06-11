@@ -46,6 +46,8 @@ class GLViewport(QOpenGLWidget):
 
     # --- Qt OpenGL lifecycle ---
     def initializeGL(self) -> None:
+        fmt = self.format()
+        print("samples:", fmt.samples())
         self._renderer.initialize()
 
     def resizeGL(self, w: int, h: int) -> None:
