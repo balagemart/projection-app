@@ -5,6 +5,7 @@ import numpy as np
 
 from editor.viewport_state import ViewportState
 from render.renderer import Renderer
+from scene.factories import create_camera, create_cube
 from scene.scene import Scene
 
 
@@ -15,7 +16,7 @@ class RendererTests(unittest.TestCase):
         old_mesh = Mock()
         renderer._meshes.append(old_mesh)
         scene = Scene()
-        scene.add_cube()
+        scene.add_object(create_cube())
 
         renderer.rebuild_scene(scene)
 
@@ -27,7 +28,7 @@ class RendererTests(unittest.TestCase):
     def test_rebuild_scene_does_not_build_normals_for_camera_icon(self, mesh_class):
         renderer = Renderer()
         scene = Scene()
-        camera = scene.get_object(scene.add_camera())
+        camera = scene.get_object(scene.add_object(create_camera()))
         camera.show_normals = True
 
         renderer.rebuild_scene(scene)

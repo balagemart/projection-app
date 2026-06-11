@@ -10,8 +10,22 @@ from geometry.sources import (
 from scene.entity import ObjectType, SceneObject
 from scene.transform import Transform
 
+# general
+DEFAULT_NAME: str = ""
 
-def create_cube(size: float = 3.0, name: str = "") -> SceneObject:
+# cube
+DEFAULT_CUBE_SIZE: float = 3.0
+
+# sphere
+DEFAULT_SPHERE_RADIUS: float = 2.0
+DEFAULT_STACKS: int = 100
+DEFAULT_SLICES: int = 100
+
+
+def create_cube(
+    size: float = DEFAULT_CUBE_SIZE,
+    name: str = DEFAULT_NAME
+) -> SceneObject:
     return SceneObject(
         id=0,
         name=name,
@@ -21,11 +35,11 @@ def create_cube(size: float = 3.0, name: str = "") -> SceneObject:
 
 
 def create_sphere(
-    radius: float = 2.0,
+    radius: float = DEFAULT_SPHERE_RADIUS,
     *,
-    stacks: int = 100,
-    slices: int = 100,
-    name: str = "",
+    stacks: int = DEFAULT_STACKS,
+    slices: int = DEFAULT_SLICES,
+    name: str = DEFAULT_NAME,
 ) -> SceneObject:
     return SceneObject(
         id=0,

@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 
 from core.camera import ProjectionMode, SceneCamera
+from scene.factories import create_camera
 from scene.scene import Scene
 from scene.transform import Transform
 
@@ -25,7 +26,7 @@ class SceneCameraTests(unittest.TestCase):
     def test_scene_object_and_camera_share_transform(self):
         scene = Scene()
 
-        camera_object = scene.get_object(scene.add_camera())
+        camera_object = scene.get_object(scene.add_object(create_camera()))
 
         self.assertIsNotNone(camera_object)
         self.assertIsNotNone(camera_object.camera)

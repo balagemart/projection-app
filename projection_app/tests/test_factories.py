@@ -46,9 +46,11 @@ class FactoryTests(unittest.TestCase):
 
 
 class SceneFactoryIntegrationTests(unittest.TestCase):
-    def test_add_methods_forward_arguments_and_select_new_object(self):
+    def test_add_object_assigns_id_name_and_selects_new_object(self):
         scene = Scene()
-        obj_id = scene.add_sphere(radius=5.0, stacks=6, slices=9, name="Custom sphere")
+        obj_id = scene.add_object(
+            create_sphere(radius=5.0, stacks=6, slices=9, name="Custom sphere")
+        )
 
         obj = scene.get_object(obj_id)
 
@@ -57,6 +59,15 @@ class SceneFactoryIntegrationTests(unittest.TestCase):
         self.assertEqual(obj.geometry.radius, 5.0)
         self.assertEqual(obj.geometry.stacks, 6)
         self.assertEqual(obj.geometry.slices, 9)
+
+    def test_add_object_generates_default_name_from_object_type(self):
+        scene = Scene()
+
+        first_id = scene.add_object(create_cube())
+        second_id = scene.add_object(create_cube())
+
+        self.assertEqual(scene.get_object(first_id).name, "Cube1")
+        self.assertEqual(scene.get_object(second_id).name, "Cube2")
 
 
 if __name__ == "__main__":
