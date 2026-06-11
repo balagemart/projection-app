@@ -12,6 +12,7 @@ from ui.left_panel import LeftPanel
 from ui.right_panel import RightPanel
 from ui.menus import build_menus
 from scene.scene import Scene
+from scene.factories import create_camera, create_cube, create_imported_mesh, create_sphere
 from io_utils.obj_loader import load_obj
 from render.gl_viewport import GLViewport
 
@@ -97,17 +98,17 @@ class MainWindow(QMainWindow):
         self._refresh_view()
 
     def _add_camera(self):
-        self.scene.add_camera()
+        self.scene.add_object(create_camera())
         self.left_panel.refresh_objects()
         self._refresh_view()
 
     def _add_cube(self) -> None:
-        self.scene.add_cube()
+        self.scene.add_object(create_cube())
         self.left_panel.refresh_objects()
         self._refresh_view()
 
     def _add_sphere(self) -> None:
-        self.scene.add_sphere()
+        self.scene.add_object(create_sphere())
         self.left_panel.refresh_objects()
         self._refresh_view()
 
@@ -123,7 +124,9 @@ class MainWindow(QMainWindow):
 
         verts, inds = load_obj(path)
 
-        self.scene.add_imported(verts, inds, components_per_vertex=3)
+        self.scene.add_object(
+            create_imported_mesh(verts, inds, components_per_vertex=3)
+        )
         self.left_panel.refresh_objects()
         self._refresh_view()
 
