@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class ProjectionMode(Enum):
     PERSPECTIVE = "perspective"
     ORTHOGRAPHIC = "orthographic"
-
+    FISHEYE = "fisheye"
 
 class ViewMode(Enum):
     FREE = "free"
@@ -238,5 +238,29 @@ class SceneCamera:
         raise ValueError(f"Unsupported projection mode: {self.projection_mode}")
 
 
-# @datalcassVjj
-# class FisheyeCamera
+# @dataclass
+# class FisheyeCamera:
+#     transform: Transform
+#     projection_mode: ProjectionMode = ProjectionMode.FISHEYE
+#     fov_y_deg: float = 180.0
+#     near: float = 0.1
+#     far: 100.0
+#
+#     def view_matrix(self) -> np.ndarray:
+#         position = np.array(self.transform.position, dtype=np.float32)
+#         rotation = np.array(self.transform.rotation, dtype=np.float32)
+#
+#         rx, ry, _ = rotation
+#
+#         # Előrenéző szög kiszámítása Eueler szögekből
+#         cx, sx = np.cos(rx), np.sin(rx)
+#         cy, sy = np.cos(ry), np.sin(ry)
+#
+#         forward = np.array([
+#             sy * cx,
+#             -sx,
+#             cy * cx,
+#         ], dtype=np.float32)
+#
+#         target = position + forward
+#         up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
