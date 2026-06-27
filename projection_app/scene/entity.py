@@ -5,10 +5,13 @@ import numpy as np
 from geometry.mesh_data import MeshData
 from geometry.sources import GeometrySource
 from scene.transform import Transform
+from scene.links import ObjectLink
 from core.camera import SceneCamera
 
 
 class ObjectType(Enum):
+    POINT = "point"
+    LINE = "line"
     CUBE = "cube"
     SPHERE = "sphere"
     IMPORTED = "imported"
@@ -27,8 +30,10 @@ class SceneObject:
     id: int
     name: str
     obj_type: ObjectType
+
     geometry: GeometrySource | None = None
     camera: SceneCamera | None = None
+    link: ObjectLink | None = None
 
     transform: Transform = field(default_factory=Transform)
 

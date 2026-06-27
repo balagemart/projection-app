@@ -4,7 +4,7 @@ from typing import Protocol
 import numpy as np
 
 from geometry.mesh_data import MeshData, PrimitiveType
-from models.cube import cube_indices, cube_vertices_per_vertex_colors
+from models.cube import cube_indices, cube_vertices_per_vertex_colors, cube_vertices_single_color
 from models.sphere import sphere_vertices
 from models.camera import camera_wireframe
 
@@ -17,6 +17,46 @@ from models.camera import camera_wireframe
 class GeometrySource(Protocol):
     def build_mesh(self) -> MeshData:
         ...
+
+
+@dataclass
+class PointGeometry:
+    size: float = 0.15
+    color: tuple[float, float, float] = (1.0, 0.85, 0.0)
+
+    def build_mesh(self) -> MeshData:
+        verts = cube_vertices_single_color(self.size, self.color)
+        inds = cube_indices()
+
+        return MeshData(
+            vertices=verts,
+            indices=inds,
+            components_per_vertex=6,
+            primitive=PrimitiveType.TRIANGLES
+        )
+
+
+@dataclass
+class LineGeometry:
+    start: np.ndarray
+    end: np.ndarray
+    color: tuple[float, float, float] = (1.0, 1.0, 0.0)
+
+    def build_mesh(self) -> MeshData:
+        r, g, b = self.color
+        verts = np.array([
+            self.start[0], self.start[1], self.start[2], r, g, b,
+            self.end[0], self.end[1], self.end[2], r, g, b
+        ], dtype=np.float32)
+
+        inds = np.array([0, 1], dtype=np.uint32)
+
+        return MeshData(
+            vertices=verts,
+            indices=inds,
+            components_per_vertex=6,
+            primitive=PrimitiveType.LINES
+        )
 
 
 @dataclass
@@ -69,10 +109,10 @@ class ImportedGeometry:
 
 @dataclass
 class CameraGeometry:
-    scale: float = 1.0
+    size: float = 1.0
 
     def build_mesh(self) -> MeshData:
-        verts, inds = camera_wireframe(self.scale)
+        verts, inds = camera_wireframe(self.size)
 
         return MeshData(
             vertices=verts,

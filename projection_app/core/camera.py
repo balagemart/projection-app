@@ -236,3 +236,7 @@ class SceneCamera:
                 self.far,
             )
         raise ValueError(f"Unsupported projection mode: {self.projection_mode}")
+
+
+# @datalcassVjj
+# class FisheyeCamera

@@ -78,7 +78,7 @@ class Renderer:
         self._dispose_scene_meshes()
 
         for obj in scene.objects:
-            mesh = obj.get_mesh()
+            mesh = scene.get_object_mesh(obj)
             if mesh is None:
                 continue
 

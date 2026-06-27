@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QListWidget, QFormLayout,
-    QDoubleSpinBox, QSpinBox, QListWidgetItem, QHBoxLayout, QPushButton, QInputDialog
+    QDoubleSpinBox, QSpinBox, QListWidgetItem, QHBoxLayout, QPushButton, QInputDialog, QAbstractItemView
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from geometry.sources import CubeGeometry, SphereGeometry
@@ -41,6 +41,15 @@ class LeftPanel(QWidget):
         # signals
         self.list_widget.currentItemChanged.connect(self.on_selection_changed)
         self.list_widget.itemDoubleClicked.connect(self.rename_object)
+        self.list_widget.setSelectionMode(
+                QAbstractItemView.SelectionMode.ExtendedSelection
+        )
+
+    def selected_object_ids(self) -> list[int]:
+        return [
+            item.data(Qt.ItemDataRole.UserRole)
+            for item in self.list_widget.selectedItems()
+        ]
 
     def rename_object(self, item: QListWidgetItem):
         obj_id = item.data(Qt.ItemDataRole.UserRole)

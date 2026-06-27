@@ -35,7 +35,7 @@ class GeometrySourceTests(unittest.TestCase):
         self.assertIs(mesh.indices, indices)
 
     def test_camera_geometry_builds_line_mesh(self):
-        mesh = CameraGeometry(scale=2.0).build_mesh()
+        mesh = CameraGeometry(size=2.0).build_mesh()
 
         self.assertEqual(mesh.primitive, PrimitiveType.LINES)
         self.assertEqual(mesh.vertices.shape, (5 * 6,))

@@ -13,7 +13,8 @@ from ui.right_panel import RightPanel
 from ui.menus import build_menus
 from ui.viewport_grid import ViewportGrid
 from scene.scene import Scene
-from scene.factories import create_camera, create_cube, create_imported_mesh, create_sphere
+from scene.factories import create_camera, create_cube, create_imported_mesh, create_sphere, create_point, create_line_between
+from scene.entity import ObjectType
 from io_utils.obj_loader import load_obj
 
 
@@ -48,6 +49,9 @@ class MainWindow(QMainWindow):
         # --- Wire up TopBar actions ---
         self.right_panel.top_bar.add_cube_requested.connect(self._add_cube)
         self.right_panel.top_bar.add_sphere_requested.connect(self._add_sphere)
+        self.right_panel.top_bar.add_point_requested.connect(self._add_point)
+        self.right_panel.top_bar.add_camera_requested.connect(self._add_camera)
+        self.right_panel.top_bar.connect_selected_requested.connect(self._connect_selected)
 
         self.right_panel.top_bar.set_perspective_view_requested.connect(self._set_perspective_view)
 
@@ -57,7 +61,6 @@ class MainWindow(QMainWindow):
         self.right_panel.top_bar.set_ortho_right_view_requested.connect(self._set_right_view)
         self.right_panel.top_bar.set_ortho_isom_view_requested.connect(self._set_isometric_view)
         self.right_panel.top_bar.set_scene_cam_view_requested.connect(self._set_scene_cam_view)
-        self.right_panel.top_bar.add_camera_requested.connect(self._add_camera)
         self.right_panel.top_bar.set_multi_view_toggle_requested.connect(self._set_multi_view_toggle_requested)
 
     @property
@@ -113,6 +116,30 @@ class MainWindow(QMainWindow):
 
     def _add_sphere(self) -> None:
         self.scene.add_object(create_sphere())
+        self.left_panel.refresh_objects()
+        self._refresh_view()
+
+    def _add_point(self) -> None:
+        self.scene.add_object(create_point())
+        self.left_panel.refresh_objects()
+        self._refresh_view()
+
+    def _connect_selected(self) -> None:
+        selected_ids = self.left_panel.selected_object_ids()
+
+        if len(selected_ids) != 2:
+            return
+
+        start_obj = self.scene.get_object(selected_ids[0])
+        end_obj = self.scene.get_object(selected_ids[1])
+
+        if start_obj is None or end_obj is None:
+            return
+
+        if start_obj.obj_type != ObjectType.POINT or end_obj.obj_type != ObjectType.POINT:
+            return
+
+        self.scene.add_object(create_line_between(start_obj.id, end_obj.id))
         self.left_panel.refresh_objects()
         self._refresh_view()
 

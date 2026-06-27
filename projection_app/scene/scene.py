@@ -4,6 +4,9 @@ from dataclasses import dataclass, field
 from core.camera import OrbitCamera
 from scene.entity import ObjectType, SceneObject
 
+from geometry.mesh_data import MeshData
+from geometry.sources import LineGeometry
+
 
 @dataclass
 class Scene:
@@ -72,6 +75,12 @@ class Scene:
         else:
             self.selected_id = None
 
+    def get_object_mesh(self, obj: SceneObject) -> MeshData | None:
+        if obj.obj_type == ObjectType.LINE:
+            return self._build_line_mesh(obj)
+
+        return obj.get_mesh()
+
     def get_selected_camera(self) -> SceneObject | None:
         for obj in self.objects:
             if (obj.obj_type == ObjectType.CAMERA) and (obj.id == self.selected_id):
@@ -79,6 +88,21 @@ class Scene:
         return None
 
     # --- Private helper ---
+    def _build_line_mesh(self, obj: SceneObject) -> MeshData | None:
+        if obj.link is None:
+            return None
+
+        start_obj = self.get_object(obj.link.start_id)
+        end_obj = self.get_object(obj.link.end_id)
+
+        if start_obj is None or end_obj is None:
+            return None
+
+        return LineGeometry(
+            start=start_obj.transform.position,
+            end=end_obj.transform.position,
+        ).build_mesh()
+
     def _default_name_for_type(self, obj_type: ObjectType) -> str:
         base = obj_type.value.capitalize()
         n = sum(1 for o in self.objects if o.obj_type == obj_type) + 1

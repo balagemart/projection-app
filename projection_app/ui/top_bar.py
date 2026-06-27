@@ -9,6 +9,7 @@ class TopBar(QWidget):
     add_cube_requested = pyqtSignal()
     add_sphere_requested = pyqtSignal()
     add_camera_requested = pyqtSignal()
+    add_point_requested = pyqtSignal()
     set_perspective_view_requested = pyqtSignal()
     set_ortho_front_view_requested = pyqtSignal()
     set_ortho_top_view_requested = pyqtSignal()
@@ -17,6 +18,7 @@ class TopBar(QWidget):
     set_ortho_isom_view_requested = pyqtSignal()
     set_scene_cam_view_requested = pyqtSignal()
     set_multi_view_toggle_requested = pyqtSignal()
+    connect_selected_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -39,8 +41,20 @@ class TopBar(QWidget):
         act_sphere = QAction("Sphere", self)
         act_sphere.triggered.connect(self.add_sphere_requested.emit)
 
+        act_camera = QAction("Camera", self)
+        act_camera.triggered.connect(self.add_camera_requested.emit)
+
+        act_point = QAction("Point", self)
+        act_point.triggered.connect(self.add_point_requested.emit)
+
+        act_connect = QAction("Connect selected", self)
+        act_connect.triggered.connect(self.connect_selected_requested.emit)
+
         geom_menu.addAction(act_cube)
         geom_menu.addAction(act_sphere)
+        geom_menu.addAction(act_point)
+        geom_menu.addAction(act_camera)
+        geom_menu.addAction(act_connect)
         geom_btn.setMenu(geom_menu)
 
         layout.addWidget(geom_btn)
@@ -72,9 +86,6 @@ class TopBar(QWidget):
         act_isom_view = QAction("Isometric", self)
         act_isom_view.triggered.connect(self.set_ortho_isom_view_requested.emit)
 
-        act_camera = QAction("Camera", self)
-        act_camera.triggered.connect(self.add_camera_requested.emit)
-        geom_menu.addAction(act_camera)
 
         scene_cam_btn = QPushButton(self)
         scene_cam_btn.setText("Scene Camera")
