@@ -63,11 +63,17 @@ class MainWindow(QMainWindow):
         self.right_panel.top_bar.set_scene_cam_view_requested.connect(self._set_scene_cam_view)
         self.right_panel.top_bar.set_multi_view_toggle_requested.connect(self._set_multi_view_toggle_requested)
 
+        self.right_panel.top_bar.intersect_requested.connect(self._intersect)
+
     @property
     def viewport_grid(self) -> ViewportGrid:
         return self.right_panel.viewport_grid
 
     # --- Private helpers ---
+    def _intersect(self) -> None:
+        self.scene.make_intersections_on_cube()
+        self._refresh_view()
+
     def _set_multi_view_toggle_requested(self) -> None:
         self.right_panel.set_viewport_grid_mode_toggle()
 

@@ -10,6 +10,7 @@ from render.axes import create_axes
 from render.grid import create_grid
 from render.mesh import Mesh
 from render.normals import build_face_normals
+from render.edges import build_edge_vetors
 from scene.scene import Scene
 from editor.viewport_state import ViewportState
 
@@ -101,6 +102,17 @@ class Renderer:
                     mesh.components_per_vertex,
                 )
                 self._meshes.append(normal_mesh)
+            if (
+                obj.show_edges
+                and mesh.primitive == PrimitiveType.TRIANGLES
+                and mesh.indices is not None
+            ):
+                edge_mesh = build_edge_vetors(
+                    mesh.vertices,
+                    mesh.indices,
+                    mesh.components_per_vertex
+                )
+                self._meshes.append(edge_mesh)
 
     def draw(self, state: ViewportState, aspect: float) -> None:
         if self._program is None:

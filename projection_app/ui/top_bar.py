@@ -19,6 +19,7 @@ class TopBar(QWidget):
     set_scene_cam_view_requested = pyqtSignal()
     set_multi_view_toggle_requested = pyqtSignal()
     connect_selected_requested = pyqtSignal()
+    intersect_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -102,9 +103,14 @@ class TopBar(QWidget):
         multi_view_btn.setText("Multi View")
         multi_view_btn.clicked.connect(self.set_multi_view_toggle_requested.emit)
 
+        intersect_btn = QPushButton(self)
+        intersect_btn.setText("Intersect")
+        intersect_btn.clicked.connect(self.intersect_requested.emit)
+
         layout.addWidget(persp_btn)
         layout.addWidget(ortho_btn)
         layout.addWidget(scene_cam_btn)
         layout.addWidget(multi_view_btn)
+        layout.addWidget(intersect_btn)
 
         layout.addStretch(1)

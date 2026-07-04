@@ -39,6 +39,7 @@ class SceneObject:
 
     visible: bool = True
     show_normals: bool = False
+    show_edges: bool = False
 
     geometry_dirty: bool = True
     transform_dirty: bool = True
@@ -64,6 +65,8 @@ class SceneObject:
             self.world_mesh_cache = self._apply_transform(self.local_mesh_cache, M)
             self.transform_dirty = False
         return self.world_mesh_cache
+
+    # --- Private helpers ---
 
     def _apply_transform(self, mesh: MeshData, model_matrix: np.ndarray) -> MeshData:
         verts = mesh.vertices.copy()

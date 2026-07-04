@@ -99,8 +99,14 @@ class LeftPanel(QWidget):
                 lambda _, obj_id=obj.id: self.show_normals_toggle(obj_id)
             )
 
+            show_edges_toggle_btn = QPushButton("E")
+            show_edges_toggle_btn.clicked.connect(
+                lambda _, obj_id=obj.id: self.show_edges_toggle(obj_id)
+            )
+
             row_layout.addWidget(name_label)
             row_layout.addStretch()
+            row_layout.addWidget(show_edges_toggle_btn)
             row_layout.addWidget(show_normals_toggle_btn)
             row_layout.addWidget(delete_btn)
 
@@ -118,6 +124,11 @@ class LeftPanel(QWidget):
     def show_normals_toggle(self, obj_id):
         obj = self.scene.get_object(obj_id)
         obj.show_normals = not obj.show_normals
+        self.scene_changed.emit()
+
+    def show_edges_toggle(self, obj_id):
+        obj = self.scene.get_object(obj_id)
+        obj.show_edges = not obj.show_edges
         self.scene_changed.emit()
 
     def delete_object(self, obj_id):
