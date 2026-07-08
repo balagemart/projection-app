@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
 
     # --- Private helpers ---
     def _intersect(self) -> None:
-        self.scene.make_intersections_on_cube()
+        self.scene.make_intersections()
         self._refresh_view()
 
     def _set_multi_view_toggle_requested(self) -> None:

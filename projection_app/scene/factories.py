@@ -17,7 +17,7 @@ from scene.links import ObjectLink
 DEFAULT_NAME: str = ""
 
 # point
-DEFAULT_POINT_SIZE: float = 0.15
+DEFAULT_POINT_SIZE: float = 0.05
 
 # cube
 DEFAULT_CUBE_SIZE: float = 3.0
@@ -36,7 +36,8 @@ def create_point(
         id=0,
         name=name,
         obj_type=ObjectType.POINT,
-        geometry=PointGeometry(size=float(size))
+        geometry=PointGeometry(size=float(size)),
+        made_of_triangles=False
     )
 
 
@@ -49,7 +50,8 @@ def create_line_between(
         id=0,
         name=name,
         obj_type=ObjectType.LINE,
-        link=ObjectLink(start_id=start_id, end_id=end_id)
+        link=ObjectLink(start_id=start_id, end_id=end_id),
+        made_of_triangles=False
     )
 
 
@@ -62,6 +64,7 @@ def create_cube(
         name=name,
         obj_type=ObjectType.CUBE,
         geometry=CubeGeometry(size=float(size)),
+        made_of_triangles=True
     )
 
 
@@ -81,6 +84,7 @@ def create_sphere(
             stacks=int(stacks),
             slices=int(slices),
         ),
+        made_of_triangles=True
     )
 
 
@@ -94,6 +98,7 @@ def create_camera(name: str = "") -> SceneObject:
         geometry=CameraGeometry(),
         camera=SceneCamera(transform=transform),
         transform=transform,
+        made_of_triangles=False
     )
 
 
@@ -113,4 +118,5 @@ def create_imported_mesh(
             indices=indices,
             components_per_vertex=int(components_per_vertex),
         ),
+        made_of_triangles=True
     )

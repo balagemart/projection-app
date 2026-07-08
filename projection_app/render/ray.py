@@ -2,6 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 
 
+# Jelenleg nincs hasznalatban ez az osztaly kell egyaltalan ilyen?? scak plussz peldanyositas valszeg
 @dataclass
 class Ray:
     origin: np.ndarray

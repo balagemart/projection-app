@@ -40,6 +40,7 @@ class SceneObject:
     visible: bool = True
     show_normals: bool = False
     show_edges: bool = False
+    made_of_triangles: bool = False
 
     geometry_dirty: bool = True
     transform_dirty: bool = True

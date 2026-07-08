@@ -28,119 +28,89 @@ class Scene:
             direction,
             v0, v1, v2
     ) -> Hit:
-        # compute the normal of the plane
+        EPSILON = 1e-8
         v0v1 = v1 - v0
         v0v2 = v2 - v0
-        N = np.cross(v0v1, v0v2)
-        denom = np.dot(N, N)
 
-        NdotRayDir = np.dot(N, direction)
-        EPSILON = 1e-8
-        if abs(NdotRayDir) < EPSILON:
+        pvec = np.cross(direction, v0v2)
+        det = np.dot(v0v1, pvec)
+
+        if det < EPSILON:
             return None
 
-        # calculating P
-        d = -np.dot(N, v0)
-        t = -(np.dot(N, origin) + d) / NdotRayDir
+        invDet = 1/det
 
-        if t < 0:
+        tvec = origin - v0
+        u = np.dot(tvec, pvec) * invDet
+        if u < 0 or u > 1:
             return None
 
-        P = origin + t * direction
-
-        # calculating u
-        v1P = P - v1
-        v1v2 = v2 - v1
-        C = np.cross(v1v2, v1P)
-        u = np.dot(N, C)
-        if u < 0:
+        qvec = np.cross(tvec, v0v1)
+        v = np.dot(direction, qvec) * invDet
+        if v < 0 or u + v > 1:
             return None
 
-        # calculating v
-        v2P = P - v2
-        v2v0 = v0 - v2
-        C = np.cross(v2v0, v2P)
-        v = np.dot(N, C)
-        if v < 0:
+        t = np.dot(v0v2, qvec) * invDet
+        if t < EPSILON:
             return None
 
-        v0P = P - v0
-        C = np.cross(v0v1, v0P)
-        if np.dot(N, C) < 0:
-            return None
-
-        u /= denom
-        v /= denom
+        P = origin + direction * t
 
         return Hit(True, t, u, v, P)
 
-    def make_intersections_on_cube(self) -> None:
-        print("VAN szandek")
+    def make_directions(self) -> []:
+        directions = []
+
+        azimuth_count = 72     # körbe, XZ síkban
+        elevation_count = 36   # fel-le
+
+        for j in range(elevation_count):
+            elevation = -np.pi / 2 + np.pi * j / (elevation_count - 1)
+
+            for i in range(azimuth_count):
+                azimuth = 2 * np.pi * i / azimuth_count
+
+                direction = np.array([
+                    np.cos(elevation) * np.cos(azimuth),  # x
+                    np.sin(elevation),                    # y
+                    np.cos(elevation) * np.sin(azimuth),  # z
+                ], dtype=np.float32)
+
+                direction = direction / np.linalg.norm(direction)
+                directions.append(direction)
+        return directions
+
+    def make_intersections(self) -> None:
+        directions = self.make_directions()
+
         for obj in self.objects:
             if obj.name == "Camera1":
-                print("VAN CAM")
                 cam = obj
                 for obj in self.objects:
-                    if obj.name == "Cube1":
-                        print("VAN KOCKA")
-                        # mesh = obj.get_mesh()
-                        mesh = obj.geometry.build_mesh()
+                    if obj.made_of_triangles:
+                        mesh = obj.get_mesh()
                         vertices = mesh.vertices
 
                         vertices = vertices.reshape(-1, 6)
-                        print(vertices.shape)
                         vertices = vertices[:, :3]
-
-                        directions = []
-                        ray_count = 36
-
-                        for i in range(ray_count):
-                            angle = 2 * np.pi * i / ray_count
-
-                            direction = np.array([
-                                np.cos(angle),   # x
-                                0.0,             # y
-                                np.sin(angle)    # z
-                            ], dtype=np.float32)
-
-                            directions.append(direction)
-
-                        directions = []
-
-                        azimuth_count = 36     # körbe, XZ síkban
-                        elevation_count = 18   # fel-le
-
-                        for j in range(elevation_count):
-                            elevation = -np.pi / 2 + np.pi * j / (elevation_count - 1)
-
-                            for i in range(azimuth_count):
-                                azimuth = 2 * np.pi * i / azimuth_count
-
-                                direction = np.array([
-                                    np.cos(elevation) * np.cos(azimuth),  # x
-                                    np.sin(elevation),                    # y
-                                    np.cos(elevation) * np.sin(azimuth),  # z
-                                ], dtype=np.float32)
-
-                                direction = direction / np.linalg.norm(direction)
-                                directions.append(direction)
 
                         for i0, i1, i2 in mesh.indices.reshape(-1, 3):
                             v0, v1, v2 = vertices[i0], vertices[i1], vertices[i2]
                             for direction in directions:
-                                hit = self.intersect(cam.transform.position, direction, v0, v1, v2)
+                                hit = self.intersect(cam.transform.position.copy(), direction, v0, v1, v2)
                                 if hit is not None:
-                                    print("HIT!")
+                                    did_hit = True
                                     pointA = create_point()
-                                    pointA.transform.position = hit.Point
+                                    pointA.transform.position = hit.Point.copy()
                                     pointA_id = self.add_object(pointA)
 
                                     pointB = create_point()
-                                    pointB.transform.position = cam.transform.position
+                                    pointB.transform.position = cam.transform.position.copy()
                                     pointB_id = self.add_object(pointB)
 
                                     self.add_object(create_line_between(pointA_id, pointB_id))
-                                    self.add_object(create_point())
+                            else:
+                                continue
 # -- intersection test
 
     # --- Public API ---
