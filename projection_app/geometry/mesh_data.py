@@ -6,6 +6,7 @@ from dataclasses import dataclass
 class PrimitiveType(Enum):
     TRIANGLES = "triangles"
     LINES = "lines"
+    POINTS = "points"
 
 
 @dataclass

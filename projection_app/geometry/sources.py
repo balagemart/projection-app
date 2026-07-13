@@ -22,6 +22,15 @@ class GeometrySource(Protocol):
 
 
 @dataclass
+class PointCloudGeometry:
+    points: np.ndarray
+    color: tuple[float, float, float] = (1.0, 0.85, 0.0)
+
+    def build_mesh(self) -> MeshData:
+        verts = self.points[:, :3]
+
+
+@dataclass
 class PointGeometry:
     size: float = 0.15
     color: tuple[float, float, float] = (1.0, 0.85, 0.0)

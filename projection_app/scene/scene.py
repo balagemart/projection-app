@@ -58,34 +58,64 @@ class Scene:
 
         return Hit(True, t, u, v, P)
 
-    def make_directions(self) -> []:
+    # def make_directions(self) -> []:
+    #     directions = []
+    #
+    #     azimuth_count = 72     # körbe, XZ síkban
+    #     elevation_count = 36   # fel-le
+    #
+    #     for j in range(elevation_count):
+    #         elevation = -np.pi / 2 + np.pi * j / (elevation_count - 1)
+    #
+    #         for i in range(azimuth_count):
+    #             azimuth = 2 * np.pi * i / azimuth_count
+    #
+    #             direction = np.array([
+    #                 np.cos(elevation) * np.cos(azimuth),  # x
+    #                 np.sin(elevation),                    # y
+    #                 np.cos(elevation) * np.sin(azimuth),  # z
+    #             ], dtype=np.float32)
+    #
+    #             direction = direction / np.linalg.norm(direction)
+    #             directions.append(direction)
+    #     return directions
+
+    def make_camera_rays(self, cam, x_count: int, y_count: int):
+        position = cam.transform.position.copy()
+        forward, right, up = cam.basis_vectors()
+
+        aspect = cam.aspect
+        fov_y = np.deg2rad(cam.fov_y_deg)
+
+        half_h = np.tan(fov_y / 2.0)
+        half_w = half_h * aspect
+
         directions = []
 
-        azimuth_count = 72     # körbe, XZ síkban
-        elevation_count = 36   # fel-le
+        for y in range(y_count):
+            v = 1.0 - 2.0 * ((y + 0.5) / y_count)  # +1 fent, -1 lent
 
-        for j in range(elevation_count):
-            elevation = -np.pi / 2 + np.pi * j / (elevation_count - 1)
+            for x in range(x_count):
+                u = 2.0 * ((x + 0.5) / x_count) - 1.0  # -1 bal, +1 jobb
 
-            for i in range(azimuth_count):
-                azimuth = 2 * np.pi * i / azimuth_count
-
-                direction = np.array([
-                    np.cos(elevation) * np.cos(azimuth),  # x
-                    np.sin(elevation),                    # y
-                    np.cos(elevation) * np.sin(azimuth),  # z
-                ], dtype=np.float32)
+                direction = (
+                    forward
+                    + right * (u * half_w)
+                    + up * (v * half_h)
+                )
 
                 direction = direction / np.linalg.norm(direction)
                 directions.append(direction)
+
         return directions
 
     def make_intersections(self) -> None:
-        directions = self.make_directions()
+        # directions = self.make_directions()
 
         for obj in self.objects:
             if obj.name == "Camera1":
                 cam = obj
+        directions = self.make_camera_rays(cam.camera, 128, 72)
 
         objects_made_of_triangles = []
         for obj in self.objects:
