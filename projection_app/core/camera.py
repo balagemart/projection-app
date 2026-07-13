@@ -16,6 +16,7 @@ class ProjectionMode(Enum):
     ORTHOGRAPHIC = "orthographic"
     FISHEYE = "fisheye"
 
+
 class ViewMode(Enum):
     FREE = "free"
     FRONT = "front"
@@ -192,27 +193,19 @@ class SceneCamera:
     fov_y_deg: float = 60.0
     ortho_scale: float = 10.0
     near: float = 0.1
-    far: float = 100.0
+    far: float = 10.0
+    resolution_width: int = 1920
+    resolution_height: int = 1080
+
+    @property
+    def aspect(self) -> float:
+        return self.resolution_width / self.resolution_height
 
     def view_matrix(self) -> np.ndarray:
         position = np.array(self.transform.position, dtype=np.float32)
-        rotation = np.array(self.transform.rotation, dtype=np.float32)
-
-        rx, ry, _ = rotation
-
-        # Előrenéző irány kiszámítása Euler szögekből
-        cx, sx = np.cos(rx), np.sin(rx)
-        cy, sy = np.cos(ry), np.sin(ry)
-
-        forward = np.array([
-            sy * cx,
-            -sx,
-            cy * cx,
-        ], dtype=np.float32)
+        forward, right, up = self.basis_vectors()
 
         target = position + forward
-        up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
-
         return look_at(position, target, up)
 
     def projection_matrix(self, aspect: float) -> np.ndarray:
@@ -236,3 +229,28 @@ class SceneCamera:
                 self.far,
             )
         raise ValueError(f"Unsupported projection mode: {self.projection_mode}")
+
+    def basis_vectors(self):
+        rotation = np.array(self.transform.rotation, dtype=np.float32)
+        rx, ry, _ = rotation
+
+        cx, sx = np.cos(rx), np.sin(rx)
+        cy, sy = np.cos(ry), np.sin(ry)
+
+        forward = np.array([
+            sy * cx,
+            -sx,
+            cy * cx,
+        ], dtype=np.float32)
+
+        forward = forward / np.linalg.norm(forward)
+
+        world_up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+
+        right = np.cross(forward, world_up)
+        right = right / np.linalg.norm(right)
+
+        up = np.cross(right, forward)
+        up = up / np.linalg.norm(up)
+
+        return forward, right, up

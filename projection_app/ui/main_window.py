@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+import time
+
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -13,9 +16,19 @@ from ui.right_panel import RightPanel
 from ui.menus import build_menus
 from ui.viewport_grid import ViewportGrid
 from scene.scene import Scene
-from scene.factories import create_camera, create_cube, create_imported_mesh, create_sphere, create_point, create_line_between
+from scene.factories import create_camera, create_cube, create_imported_mesh, create_sphere, create_point, create_line_between, create_frustum
 from scene.entity import ObjectType
 from io_utils.obj_loader import load_obj
+
+
+@contextmanager
+def timer(name: str):
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        end = time.perf_counter()
+        print(f"{name}: {end - start:.4f} s")
 
 
 class MainWindow(QMainWindow):
@@ -36,6 +49,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(0)
 
         self.left_panel = LeftPanel()
+        self.left_panel.setFixedWidth(280)
         self.left_panel.set_scene(self.scene)
         self.right_panel = RightPanel(self.scene)
         self.left_panel.scene_changed.connect(self.viewport_grid.mark_scene_dirty)
@@ -51,6 +65,7 @@ class MainWindow(QMainWindow):
         self.right_panel.top_bar.add_sphere_requested.connect(self._add_sphere)
         self.right_panel.top_bar.add_point_requested.connect(self._add_point)
         self.right_panel.top_bar.add_camera_requested.connect(self._add_camera)
+        self.right_panel.top_bar.add_frustum_requested.connect(self._add_frustum)
         self.right_panel.top_bar.connect_selected_requested.connect(self._connect_selected)
 
         self.right_panel.top_bar.set_perspective_view_requested.connect(self._set_perspective_view)
@@ -71,7 +86,8 @@ class MainWindow(QMainWindow):
 
     # --- Private helpers ---
     def _intersect(self) -> None:
-        self.scene.make_intersections()
+        with timer("make_intersections"):
+            self.scene.make_intersections()
         self._refresh_view()
 
     def _set_multi_view_toggle_requested(self) -> None:
@@ -146,6 +162,21 @@ class MainWindow(QMainWindow):
             return
 
         self.scene.add_object(create_line_between(start_obj.id, end_obj.id))
+        self.left_panel.refresh_objects()
+        self._refresh_view()
+
+    def _add_frustum(self) -> None:
+        selected_ids = self.left_panel.selected_object_ids()
+        if len(selected_ids) != 1:
+            return
+
+        obj = self.scene.get_object(selected_ids[0])
+        if obj is None or obj.camera is None or obj.obj_type != ObjectType.CAMERA:
+            return
+
+        aspect = obj.camera.aspect
+
+        self.scene.add_object(create_frustum(obj.camera, aspect))
         self.left_panel.refresh_objects()
         self._refresh_view()
 

@@ -7,6 +7,8 @@ from geometry.mesh_data import MeshData, PrimitiveType
 from models.cube import cube_indices, cube_vertices_per_vertex_colors, cube_vertices_single_color
 from models.sphere import sphere_vertices
 from models.camera import camera_wireframe
+from models.frustum import frustum_wireframe
+from core.camera import SceneCamera
 
 
 #  TODO EGY HELYEN BEALLITANI A STACKS RADIUS STB ALAP ERTEKET CONSTBA ES NE MAGIC NUMBER LEGYEN
@@ -113,6 +115,37 @@ class CameraGeometry:
 
     def build_mesh(self) -> MeshData:
         verts, inds = camera_wireframe(self.size)
+
+        return MeshData(
+            vertices=verts,
+            indices=inds,
+            components_per_vertex=6,
+            primitive=PrimitiveType.LINES
+        )
+
+
+@dataclass
+class FrustumGeometry:
+    position: np.ndarray
+    forward: np.ndarray
+    right: np.ndarray
+    up: np.ndarray
+    fov_y: float
+    aspect: float
+    near: float
+    far: float
+
+    def build_mesh(self) -> MeshData:
+        verts, inds = frustum_wireframe(
+            self.position,
+            self.forward,
+            self.right,
+            self.up,
+            self.fov_y,
+            self.aspect,
+            self.near,
+            self.far
+        )
 
         return MeshData(
             vertices=verts,

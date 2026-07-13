@@ -105,12 +105,10 @@ def create_camera(name: str = "") -> SceneObject:
 
 def create_frustum(
     cam: SceneCamera,
-    aspect: float,
     name: str = ""
 ) -> SceneObject:
 
-    forward, right, up = cam.basis_vectors()
-    right = np.cross(forward, up)
+    right = np.cross(cam.forward, cam.up)
     right = right / np.linalg.norm(right)
 
     return SceneObject(
@@ -119,11 +117,11 @@ def create_frustum(
         obj_type=ObjectType.FRUSTUM,
         geometry=FrustumGeometry(
             cam.transform.position,
-            forward,
-            right,
-            up,
-            np.deg2rad(cam.fov_y_deg),
-            aspect,
+            cam.forward,
+            "right",
+            cam.up,
+            cam.fov_y_deg,
+            cam.aspect,
             cam.near,
             cam.far
         ),

@@ -10,6 +10,7 @@ class TopBar(QWidget):
     add_sphere_requested = pyqtSignal()
     add_camera_requested = pyqtSignal()
     add_point_requested = pyqtSignal()
+    add_frustum_requested = pyqtSignal()
     set_perspective_view_requested = pyqtSignal()
     set_ortho_front_view_requested = pyqtSignal()
     set_ortho_top_view_requested = pyqtSignal()
@@ -107,10 +108,15 @@ class TopBar(QWidget):
         intersect_btn.setText("Intersect")
         intersect_btn.clicked.connect(self.intersect_requested.emit)
 
+        frustum_btn = QPushButton(self)
+        frustum_btn.setText("Show Frustum")
+        frustum_btn.clicked.connect(self.add_frustum_requested)
+
         layout.addWidget(persp_btn)
         layout.addWidget(ortho_btn)
         layout.addWidget(scene_cam_btn)
         layout.addWidget(multi_view_btn)
         layout.addWidget(intersect_btn)
+        layout.addWidget(frustum_btn)
 
         layout.addStretch(1)

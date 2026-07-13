@@ -86,31 +86,46 @@ class Scene:
         for obj in self.objects:
             if obj.name == "Camera1":
                 cam = obj
-                for obj in self.objects:
-                    if obj.made_of_triangles:
-                        mesh = obj.get_mesh()
-                        vertices = mesh.vertices
 
-                        vertices = vertices.reshape(-1, 6)
-                        vertices = vertices[:, :3]
+        objects_made_of_triangles = []
+        for obj in self.objects:
+            if obj.made_of_triangles:
+                objects_made_of_triangles.append(obj)
 
-                        for i0, i1, i2 in mesh.indices.reshape(-1, 3):
-                            v0, v1, v2 = vertices[i0], vertices[i1], vertices[i2]
-                            for direction in directions:
-                                hit = self.intersect(cam.transform.position.copy(), direction, v0, v1, v2)
-                                if hit is not None:
-                                    did_hit = True
-                                    pointA = create_point()
-                                    pointA.transform.position = hit.Point.copy()
-                                    pointA_id = self.add_object(pointA)
+        hits_to_make = []
+        for direction in directions:
+            closest_hit = None
 
-                                    pointB = create_point()
-                                    pointB.transform.position = cam.transform.position.copy()
-                                    pointB_id = self.add_object(pointB)
+            for obj in objects_made_of_triangles:
+                mesh = obj.get_mesh()
 
-                                    self.add_object(create_line_between(pointA_id, pointB_id))
-                            else:
-                                continue
+                vertices = mesh.vertices.reshape(-1, 6)[:, :3]
+                indices = mesh.indices.reshape(-1, 3)
+
+                for i0, i1, i2 in indices:
+                    v0, v1, v2 = vertices[i0], vertices[i1], vertices[i2]
+
+                    hit = self.intersect(cam.transform.position.copy(), direction, v0, v1, v2)
+                    if hit is None:
+                        continue
+
+                    if closest_hit is None or hit.t < closest_hit.t:
+                        closest_hit = hit
+
+            if closest_hit is not None:
+                hits_to_make.append(closest_hit)
+
+        for hit in hits_to_make:
+            pointA = create_point()
+            pointA.transform.position = hit.Point.copy()
+            pointA_id = self.add_object(pointA)
+
+            pointB = create_point()
+            pointB.transform.position = cam.transform.position.copy()
+            pointB_id = self.add_object(pointB)
+
+            self.add_object(create_line_between(pointA_id, pointB_id))
+
 # -- intersection test
 
     # --- Public API ---

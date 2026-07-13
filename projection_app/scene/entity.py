@@ -16,6 +16,7 @@ class ObjectType(Enum):
     SPHERE = "sphere"
     IMPORTED = "imported"
     CAMERA = "camera"
+    FRUSTUM = "frustum"
 
 
 @dataclass
