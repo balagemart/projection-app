@@ -21,7 +21,7 @@ class GLViewport(QOpenGLWidget):
 
     def __init__(self, parent=None, viewport_state: ViewportState | None = None):
         super().__init__(parent)
-        self.setMinimumSize(640, 480)
+        self.setMinimumSize(240, 180)
         self.setObjectName("ViewPort")
         self._renderer = Renderer()
 
@@ -79,6 +79,9 @@ class GLViewport(QOpenGLWidget):
 
     def mark_scene_dirty(self) -> None:
         self._scene_dirty = True
+        self.update()
+
+    def mark_camera_dirty(self) -> None:
         self.update()
 
     def set_current_camera(self, camera: Camera) -> None:

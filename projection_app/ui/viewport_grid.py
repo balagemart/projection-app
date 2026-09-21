@@ -60,6 +60,10 @@ class ViewportGrid(QWidget):
         for viewport in self._viewports.values():
             viewport.mark_scene_dirty()
 
+    def mark_camera_dirty(self) -> None:
+        for viewport in self._viewports.values():
+            viewport.mark_camera_dirty()
+
     def set_current_camera(self, camera: Camera) -> None:
         self.active_viewport.set_current_camera(camera)
 

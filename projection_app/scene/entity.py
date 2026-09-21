@@ -15,8 +15,10 @@ class ObjectType(Enum):
     CUBE = "cube"
     SPHERE = "sphere"
     IMPORTED = "imported"
-    CAMERA = "camera"
+    PERSP_CAMERA = "persp_camera"
+    ORTHO_CAMERA = "ortho_camera"
     FRUSTUM = "frustum"
+    POINTCLOUD = "pointcloud"
 
 
 @dataclass

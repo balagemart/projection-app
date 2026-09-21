@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def frustum_wireframe(
+def perspective_frustum_wireframe(
     position: np.ndarray,
     forward: np.ndarray,
     right: np.ndarray,
@@ -42,6 +42,51 @@ def frustum_wireframe(
             color[0],
             color[1],
             color[2],
+        ])
+
+    inds = np.array([
+        0, 1, 1, 2, 2, 3, 3, 0,
+        4, 5, 5, 6, 6, 7, 7, 4,
+        0, 4, 1, 5, 2, 6, 3, 7,
+    ], dtype=np.uint32)
+
+    return np.array(verts, dtype=np.float32), inds
+
+
+def orthographic_frustum_wireframe(
+    position: np.ndarray,
+    forward: np.ndarray,
+    right: np.ndarray,
+    up: np.ndarray,
+    ortho_scale: float,
+    aspect: float,
+    near: float,
+    far: float,
+):
+    half_h = ortho_scale
+    half_w = half_h * aspect
+
+    near_center = position + forward * near
+    far_center = position + forward * far
+
+    ntl = near_center + up * half_h - right * half_w
+    ntr = near_center + up * half_h + right * half_w
+    nbl = near_center - up * half_h - right * half_w
+    nbr = near_center - up * half_h + right * half_w
+
+    ftl = far_center + up * half_h - right * half_w
+    ftr = far_center + up * half_h + right * half_w
+    fbl = far_center - up * half_h - right * half_w
+    fbr = far_center - up * half_h + right * half_w
+
+    color = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+    corners = [ntl, ntr, nbr, nbl, ftl, ftr, fbr, fbl]
+
+    verts = []
+    for corner in corners:
+        verts.extend([
+            corner[0], corner[1], corner[2],
+            color[0], color[1], color[2],
         ])
 
     inds = np.array([

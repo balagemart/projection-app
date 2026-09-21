@@ -1,17 +1,12 @@
 from __future__ import annotations
+import numpy as np
 from dataclasses import dataclass, field
 
 from core.camera import OrbitCamera
 from scene.entity import ObjectType, SceneObject
 
 from geometry.mesh_data import MeshData
-from geometry.sources import LineGeometry
-
-# -- intersection test
-from render.ray import Ray, Hit
-import numpy as np
-from scene.factories import create_point, create_line_between
-# -- intersection test
+from geometry.sources import LineGeometry, FrustumGeometry
 
 
 @dataclass
@@ -20,143 +15,6 @@ class Scene:
     objects: list[SceneObject] = field(default_factory=list)
     selected_id: int | None = None
     _next_id: int = 1
-
-# -- intersection test
-    def intersect(
-            self,
-            origin,
-            direction,
-            v0, v1, v2
-    ) -> Hit:
-        EPSILON = 1e-8
-        v0v1 = v1 - v0
-        v0v2 = v2 - v0
-
-        pvec = np.cross(direction, v0v2)
-        det = np.dot(v0v1, pvec)
-
-        if det < EPSILON:
-            return None
-
-        invDet = 1/det
-
-        tvec = origin - v0
-        u = np.dot(tvec, pvec) * invDet
-        if u < 0 or u > 1:
-            return None
-
-        qvec = np.cross(tvec, v0v1)
-        v = np.dot(direction, qvec) * invDet
-        if v < 0 or u + v > 1:
-            return None
-
-        t = np.dot(v0v2, qvec) * invDet
-        if t < EPSILON:
-            return None
-
-        P = origin + direction * t
-
-        return Hit(True, t, u, v, P)
-
-    # def make_directions(self) -> []:
-    #     directions = []
-    #
-    #     azimuth_count = 72     # körbe, XZ síkban
-    #     elevation_count = 36   # fel-le
-    #
-    #     for j in range(elevation_count):
-    #         elevation = -np.pi / 2 + np.pi * j / (elevation_count - 1)
-    #
-    #         for i in range(azimuth_count):
-    #             azimuth = 2 * np.pi * i / azimuth_count
-    #
-    #             direction = np.array([
-    #                 np.cos(elevation) * np.cos(azimuth),  # x
-    #                 np.sin(elevation),                    # y
-    #                 np.cos(elevation) * np.sin(azimuth),  # z
-    #             ], dtype=np.float32)
-    #
-    #             direction = direction / np.linalg.norm(direction)
-    #             directions.append(direction)
-    #     return directions
-
-    def make_camera_rays(self, cam, x_count: int, y_count: int):
-        position = cam.transform.position.copy()
-        forward, right, up = cam.basis_vectors()
-
-        aspect = cam.aspect
-        fov_y = np.deg2rad(cam.fov_y_deg)
-
-        half_h = np.tan(fov_y / 2.0)
-        half_w = half_h * aspect
-
-        directions = []
-
-        for y in range(y_count):
-            v = 1.0 - 2.0 * ((y + 0.5) / y_count)  # +1 fent, -1 lent
-
-            for x in range(x_count):
-                u = 2.0 * ((x + 0.5) / x_count) - 1.0  # -1 bal, +1 jobb
-
-                direction = (
-                    forward
-                    + right * (u * half_w)
-                    + up * (v * half_h)
-                )
-
-                direction = direction / np.linalg.norm(direction)
-                directions.append(direction)
-
-        return directions
-
-    def make_intersections(self) -> None:
-        # directions = self.make_directions()
-
-        for obj in self.objects:
-            if obj.name == "Camera1":
-                cam = obj
-        directions = self.make_camera_rays(cam.camera, 128, 72)
-
-        objects_made_of_triangles = []
-        for obj in self.objects:
-            if obj.made_of_triangles:
-                objects_made_of_triangles.append(obj)
-
-        hits_to_make = []
-        for direction in directions:
-            closest_hit = None
-
-            for obj in objects_made_of_triangles:
-                mesh = obj.get_mesh()
-
-                vertices = mesh.vertices.reshape(-1, 6)[:, :3]
-                indices = mesh.indices.reshape(-1, 3)
-
-                for i0, i1, i2 in indices:
-                    v0, v1, v2 = vertices[i0], vertices[i1], vertices[i2]
-
-                    hit = self.intersect(cam.transform.position.copy(), direction, v0, v1, v2)
-                    if hit is None:
-                        continue
-
-                    if closest_hit is None or hit.t < closest_hit.t:
-                        closest_hit = hit
-
-            if closest_hit is not None:
-                hits_to_make.append(closest_hit)
-
-        for hit in hits_to_make:
-            pointA = create_point()
-            pointA.transform.position = hit.Point.copy()
-            pointA_id = self.add_object(pointA)
-
-            pointB = create_point()
-            pointB.transform.position = cam.transform.position.copy()
-            pointB_id = self.add_object(pointB)
-
-            self.add_object(create_line_between(pointA_id, pointB_id))
-
-# -- intersection test
 
     # --- Public API ---
     def add_object(self, obj: SceneObject) -> int:
@@ -219,6 +77,8 @@ class Scene:
             self.selected_id = None
 
     def get_object_mesh(self, obj: SceneObject) -> MeshData | None:
+        if obj.obj_type == ObjectType.FRUSTUM:
+            return self._build_frustum_mesh(obj)
         if obj.obj_type == ObjectType.LINE:
             return self._build_line_mesh(obj)
 
@@ -226,7 +86,7 @@ class Scene:
 
     def get_selected_camera(self) -> SceneObject | None:
         for obj in self.objects:
-            if (obj.obj_type == ObjectType.CAMERA) and (obj.id == self.selected_id):
+            if ((obj.obj_type == ObjectType.PERSP_CAMERA or obj.obj_type == ObjectType.ORTHO_CAMERA) and (obj.id == self.selected_id)):
                 return obj
         return None
 
@@ -245,6 +105,31 @@ class Scene:
             start=start_obj.transform.position,
             end=end_obj.transform.position,
         ).build_mesh()
+
+    def _build_frustum_mesh(self, obj: SceneObject) -> MeshData | None:
+        if obj.link is None:
+            return None
+
+        linked_obj = self.get_object(obj.link.start_id)
+        if linked_obj is None or linked_obj.camera is None:
+            return
+        linked_cam = linked_obj.camera
+
+        position = linked_cam.transform.position
+        forward, right, up = linked_cam.basis_vectors()
+        fov_y = np.deg2rad(linked_cam.fov_y_deg)
+        return FrustumGeometry(
+                position,
+                forward,
+                right,
+                up,
+                linked_cam.projection_mode,
+                fov_y,
+                linked_cam.ortho_scale,
+                linked_cam.aspect,
+                linked_cam.near,
+                linked_cam.far,
+            ).build_mesh()
 
     def _default_name_for_type(self, obj_type: ObjectType) -> str:
         base = obj_type.value.capitalize()

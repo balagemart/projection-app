@@ -7,14 +7,9 @@ from geometry.mesh_data import MeshData, PrimitiveType
 from models.cube import cube_indices, cube_vertices_per_vertex_colors, cube_vertices_single_color
 from models.sphere import sphere_vertices
 from models.camera import camera_wireframe
-from models.frustum import frustum_wireframe
-from core.camera import SceneCamera
+from models.frustum import perspective_frustum_wireframe, orthographic_frustum_wireframe
+from core.camera import ProjectionMode
 
-
-#  TODO EGY HELYEN BEALLITANI A STACKS RADIUS STB ALAP ERTEKET CONSTBA ES NE MAGIC NUMBER LEGYEN
-#  VALOSZINULEG ITT ALKALMAS ES AKKOR A SCENEBEN NEM IS KELL OKET MEGADNI
-
-# TODO program elcrashel ha normalst be akarom kapcsolni a kapera wireframere
 
 class GeometrySource(Protocol):
     def build_mesh(self) -> MeshData:
@@ -27,7 +22,14 @@ class PointCloudGeometry:
     color: tuple[float, float, float] = (1.0, 0.85, 0.0)
 
     def build_mesh(self) -> MeshData:
-        verts = self.points[:, :3]
+        verts = self.points
+
+        return MeshData(
+            vertices=verts,
+            indices=None,
+            components_per_vertex=6,
+            primitive=PrimitiveType.POINTS
+        )
 
 
 @dataclass
@@ -139,22 +141,38 @@ class FrustumGeometry:
     forward: np.ndarray
     right: np.ndarray
     up: np.ndarray
+    projection_mode: ProjectionMode
     fov_y: float
+    ortho_scale: float
     aspect: float
     near: float
     far: float
 
     def build_mesh(self) -> MeshData:
-        verts, inds = frustum_wireframe(
-            self.position,
-            self.forward,
-            self.right,
-            self.up,
-            self.fov_y,
-            self.aspect,
-            self.near,
-            self.far
-        )
+        if self.projection_mode == ProjectionMode.PERSPECTIVE:
+            verts, inds = perspective_frustum_wireframe(
+                self.position,
+                self.forward,
+                self.right,
+                self.up,
+                self.fov_y,
+                self.aspect,
+                self.near,
+                self.far
+            )
+        elif self.projection_mode == ProjectionMode.ORTHOGRAPHIC:
+            verts, inds = orthographic_frustum_wireframe(
+                self.position,
+                self.forward,
+                self.right,
+                self.up,
+                self.ortho_scale,
+                self.aspect,
+                self.near,
+                self.far
+            )
+        else:
+            raise ValueError(f"Unsupported projection mode: {self.projection_mode}")
 
         return MeshData(
             vertices=verts,

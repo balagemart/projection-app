@@ -91,6 +91,7 @@ class Renderer:
                     indices=mesh.indices,
                 )
             )
+
             if (
                 obj.show_normals
                 and mesh.primitive == PrimitiveType.TRIANGLES
@@ -160,4 +161,7 @@ class Renderer:
             return gl.GL_TRIANGLES
         if primitive == PrimitiveType.LINES:
             return gl.GL_LINES
+        if primitive == PrimitiveType.POINTS:
+            gl.glPointSize(5.0)
+            return gl.GL_POINTS
         raise ValueError(f"Unsupported primitive: {primitive}")

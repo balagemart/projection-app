@@ -16,9 +16,10 @@ from ui.right_panel import RightPanel
 from ui.menus import build_menus
 from ui.viewport_grid import ViewportGrid
 from scene.scene import Scene
-from scene.factories import create_camera, create_cube, create_imported_mesh, create_sphere, create_point, create_line_between, create_frustum
+from scene.factories import create_persp_camera, create_ortho_camera, create_cube, create_imported_mesh, create_sphere, create_point, create_line_between, create_frustum
 from scene.entity import ObjectType
 from io_utils.obj_loader import load_obj
+from raycast.intersector import Intersector
 
 
 @contextmanager
@@ -40,6 +41,9 @@ class MainWindow(QMainWindow):
         # --- Scene ---
         self.scene = Scene()
 
+        # --- Intersector ---
+        self.intersector = Intersector(self.scene)
+
         # --- Central layout ---
         root = QWidget(self)
         self.setCentralWidget(root)
@@ -49,10 +53,11 @@ class MainWindow(QMainWindow):
         layout.setSpacing(0)
 
         self.left_panel = LeftPanel()
-        self.left_panel.setFixedWidth(280)
         self.left_panel.set_scene(self.scene)
         self.right_panel = RightPanel(self.scene)
         self.left_panel.scene_changed.connect(self.viewport_grid.mark_scene_dirty)
+        # self.left_panel.camera_specs_changed.connect(self.viewport_grid.mark_camera_dirty)
+        self.left_panel.camera_specs_changed.connect(self.viewport_grid.mark_scene_dirty)
 
         layout.addWidget(self.left_panel, 1)
         layout.addWidget(self.right_panel, 4)
@@ -64,8 +69,10 @@ class MainWindow(QMainWindow):
         self.right_panel.top_bar.add_cube_requested.connect(self._add_cube)
         self.right_panel.top_bar.add_sphere_requested.connect(self._add_sphere)
         self.right_panel.top_bar.add_point_requested.connect(self._add_point)
-        self.right_panel.top_bar.add_camera_requested.connect(self._add_camera)
+        self.right_panel.top_bar.add_perspective_camera_requested.connect(self._add_persp_camera)
+        self.right_panel.top_bar.add_ortho_camera_requested.connect(self._add_ortho_camera)
         self.right_panel.top_bar.add_frustum_requested.connect(self._add_frustum)
+
         self.right_panel.top_bar.connect_selected_requested.connect(self._connect_selected)
 
         self.right_panel.top_bar.set_perspective_view_requested.connect(self._set_perspective_view)
@@ -87,7 +94,22 @@ class MainWindow(QMainWindow):
     # --- Private helpers ---
     def _intersect(self) -> None:
         with timer("make_intersections"):
-            self.scene.make_intersections()
+            selected_ids = self.left_panel.selected_object_ids()
+
+            if len(selected_ids) != 1:
+                return
+
+            cam = self.scene.get_object(selected_ids[0])
+            if cam is None:
+                return
+
+            if (
+                cam.obj_type not in (ObjectType.PERSP_CAMERA, ObjectType.ORTHO_CAMERA)
+                or cam.camera is None
+            ):
+                return
+
+            self.intersector.make_intersection(cam.camera)
         self._refresh_view()
 
     def _set_multi_view_toggle_requested(self) -> None:
@@ -126,8 +148,13 @@ class MainWindow(QMainWindow):
         self.scene.editor_camera.set_right_view()
         self._refresh_view()
 
-    def _add_camera(self):
-        self.scene.add_object(create_camera())
+    def _add_persp_camera(self):
+        self.scene.add_object(create_persp_camera())
+        self.left_panel.refresh_objects()
+        self._refresh_view()
+
+    def _add_ortho_camera(self):
+        self.scene.add_object(create_ortho_camera())
         self.left_panel.refresh_objects()
         self._refresh_view()
 
@@ -171,12 +198,14 @@ class MainWindow(QMainWindow):
             return
 
         obj = self.scene.get_object(selected_ids[0])
-        if obj is None or obj.camera is None or obj.obj_type != ObjectType.CAMERA:
+        if obj is None or obj.camera is None:
+            return
+        if not (obj.obj_type == ObjectType.PERSP_CAMERA or obj.obj_type == ObjectType.ORTHO_CAMERA):
             return
 
         aspect = obj.camera.aspect
 
-        self.scene.add_object(create_frustum(obj.camera, aspect))
+        self.scene.add_object(create_frustum(obj.id, obj.camera, aspect))
         self.left_panel.refresh_objects()
         self._refresh_view()
 

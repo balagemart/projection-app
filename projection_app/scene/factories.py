@@ -8,11 +8,13 @@ from geometry.sources import (
     CubeGeometry,
     ImportedGeometry,
     SphereGeometry,
-    FrustumGeometry
+    FrustumGeometry,
+    PointCloudGeometry
 )
 from scene.entity import ObjectType, SceneObject
 from scene.transform import Transform
 from scene.links import ObjectLink
+from core.camera import ProjectionMode
 
 # general
 DEFAULT_NAME: str = ""
@@ -38,6 +40,19 @@ def create_point(
         name=name,
         obj_type=ObjectType.POINT,
         geometry=PointGeometry(size=float(size)),
+        made_of_triangles=False
+    )
+
+
+def create_pointcloud(
+    points: np.ndarray,
+    name: str = DEFAULT_NAME
+) -> SceneObject:
+    return SceneObject(
+        id=0,
+        name=name,
+        obj_type=ObjectType.POINTCLOUD,
+        geometry=PointCloudGeometry(points),
         made_of_triangles=False
     )
 
@@ -89,21 +104,36 @@ def create_sphere(
     )
 
 
-def create_camera(name: str = "") -> SceneObject:
+def create_persp_camera(name: str = "") -> SceneObject:
     transform = Transform()
 
     return SceneObject(
         id=0,
         name=name,
-        obj_type=ObjectType.CAMERA,
+        obj_type=ObjectType.PERSP_CAMERA,
         geometry=CameraGeometry(),
-        camera=SceneCamera(transform=transform),
+        camera=SceneCamera(transform=transform, projection_mode=ProjectionMode.PERSPECTIVE),
+        transform=transform,
+        made_of_triangles=False
+    )
+
+
+def create_ortho_camera(name: str = "") -> SceneObject:
+    transform = Transform()
+
+    return SceneObject(
+        id=0,
+        name=name,
+        obj_type=ObjectType.ORTHO_CAMERA,
+        geometry=CameraGeometry(),
+        camera=SceneCamera(transform=transform, projection_mode=ProjectionMode.ORTHOGRAPHIC),
         transform=transform,
         made_of_triangles=False
     )
 
 
 def create_frustum(
+    cam_id: float,
     cam: SceneCamera,
     aspect: float,
     name: str = ""
@@ -112,17 +142,21 @@ def create_frustum(
     forward, right, up = cam.basis_vectors()
     right = np.cross(forward, up)
     right = right / np.linalg.norm(right)
+    ortho_scale = cam.ortho_scale
 
     return SceneObject(
         id=0,
         name=name,
         obj_type=ObjectType.FRUSTUM,
+        link=ObjectLink(start_id=cam_id, end_id=-1),
         geometry=FrustumGeometry(
             cam.transform.position,
             forward,
             right,
             up,
+            cam.projection_mode,
             np.deg2rad(cam.fov_y_deg),
+            ortho_scale,
             aspect,
             cam.near,
             cam.far

@@ -8,7 +8,8 @@ from PyQt6.QtCore import pyqtSignal
 class TopBar(QWidget):
     add_cube_requested = pyqtSignal()
     add_sphere_requested = pyqtSignal()
-    add_camera_requested = pyqtSignal()
+    add_perspective_camera_requested = pyqtSignal()
+    add_ortho_camera_requested = pyqtSignal()
     add_point_requested = pyqtSignal()
     add_frustum_requested = pyqtSignal()
     set_perspective_view_requested = pyqtSignal()
@@ -43,27 +44,27 @@ class TopBar(QWidget):
         act_sphere = QAction("Sphere", self)
         act_sphere.triggered.connect(self.add_sphere_requested.emit)
 
-        act_camera = QAction("Camera", self)
-        act_camera.triggered.connect(self.add_camera_requested.emit)
+        act_persp_camera = QAction("Perspective camera", self)
+        act_persp_camera.triggered.connect(self.add_perspective_camera_requested.emit)
+
+        act_ortho_camera = QAction("Orthographic camera", self)
+        act_ortho_camera.triggered.connect(self.add_ortho_camera_requested.emit)
 
         act_point = QAction("Point", self)
         act_point.triggered.connect(self.add_point_requested.emit)
 
-        act_connect = QAction("Connect selected", self)
-        act_connect.triggered.connect(self.connect_selected_requested.emit)
-
         geom_menu.addAction(act_cube)
         geom_menu.addAction(act_sphere)
         geom_menu.addAction(act_point)
-        geom_menu.addAction(act_camera)
-        geom_menu.addAction(act_connect)
+        geom_menu.addAction(act_persp_camera)
+        geom_menu.addAction(act_ortho_camera)
         geom_btn.setMenu(geom_menu)
 
         layout.addWidget(geom_btn)
 
         # View selector
         persp_btn = QPushButton(self)
-        persp_btn.setText("Perspective")
+        persp_btn.setText("Orbit mode")
 
         persp_btn.clicked.connect(self.set_perspective_view_requested.emit)
 
@@ -108,6 +109,10 @@ class TopBar(QWidget):
         intersect_btn.setText("Intersect")
         intersect_btn.clicked.connect(self.intersect_requested.emit)
 
+        connect_points_btn = QPushButton(self)
+        connect_points_btn.setText("Connect points")
+        connect_points_btn.clicked.connect(self.connect_selected_requested.emit)
+
         frustum_btn = QPushButton(self)
         frustum_btn.setText("Show Frustum")
         frustum_btn.clicked.connect(self.add_frustum_requested)
@@ -117,6 +122,7 @@ class TopBar(QWidget):
         layout.addWidget(scene_cam_btn)
         layout.addWidget(multi_view_btn)
         layout.addWidget(intersect_btn)
+        layout.addWidget(connect_points_btn)
         layout.addWidget(frustum_btn)
 
         layout.addStretch(1)

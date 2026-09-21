@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox, QSpinBox, QListWidgetItem, QHBoxLayout, QPushButton, QInputDialog, QAbstractItemView
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from geometry.sources import CubeGeometry, SphereGeometry
+from geometry.sources import CubeGeometry, SphereGeometry, CameraGeometry
 from scene.entity import ObjectType, SceneObject
 from scene.scene import Scene
 from ui.widgets.drag_spinbox import DragDoubleSpinBox, DragIntSpinBox
@@ -13,6 +13,7 @@ from ui.widgets.drag_spinbox import DragDoubleSpinBox, DragIntSpinBox
 class LeftPanel(QWidget):
 
     scene_changed = pyqtSignal()         # event with int value
+    camera_specs_changed = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -177,6 +178,10 @@ class LeftPanel(QWidget):
             self._build_cube_properties(obj)
         elif obj.obj_type == ObjectType.SPHERE:
             self._build_sphere_properties(obj)
+        elif obj.obj_type == ObjectType.PERSP_CAMERA:
+            self._build_persp_cam_properties(obj)
+        elif obj.obj_type == ObjectType.ORTHO_CAMERA:
+            self._build_ortho_cam_properties(obj)
         elif obj.obj_type == ObjectType.IMPORTED:
             self._build_imported_properties(obj)
 
@@ -207,12 +212,29 @@ class LeftPanel(QWidget):
         self.scene_changed.emit()
 
     def _build_transform_properties(self, obj: SceneObject):
+        if obj.camera is not None:
+            self._build_pos_properties(obj)
+            self._build_rot_properties(obj)
+        elif obj.camera is None:
+            self._build_pos_properties(obj)
+            self._build_rot_properties(obj)
+            self._build_scale_properties(obj)
+
+
+    def _build_pos_properties(self, obj: SceneObject):
         pos_row, pos_spins = self._generate_xyz_spinboxes(
                     obj.transform.position,
                     min_value=-1000.0,
                     max_value=1000.0,
                     step=0.1,
                 )
+        pos_spins[0].valueChanged.connect(lambda v: self.on_position_changed(0, v))
+        pos_spins[1].valueChanged.connect(lambda v: self.on_position_changed(1, v))
+        pos_spins[2].valueChanged.connect(lambda v: self.on_position_changed(2, v))
+
+        self.properties_layout.addRow("Position", pos_row)
+
+    def _build_rot_properties(self, obj: SceneObject):
         rot_deg = [np.rad2deg(v) for v in obj.transform.rotation]
         rot_row, rot_spins = self._generate_xyz_spinboxes(
                     rot_deg,
@@ -220,27 +242,23 @@ class LeftPanel(QWidget):
                     max_value=360.0,
                     step=0.1,
                 )
+        rot_spins[0].valueChanged.connect(lambda v: self.on_rotation_changed(0, v))
+        rot_spins[1].valueChanged.connect(lambda v: self.on_rotation_changed(1, v))
+        rot_spins[2].valueChanged.connect(lambda v: self.on_rotation_changed(2, v))
+
+        self.properties_layout.addRow("Rotation", rot_row)
+
+    def _build_scale_properties(self, obj: SceneObject):
         scale_row, scale_spins = self._generate_xyz_spinboxes(
                     obj.transform.scale,
                     min_value=0.01,
                     max_value=1000.0,
                     step=0.1
                 )
-
-        pos_spins[0].valueChanged.connect(lambda v: self.on_position_changed(0, v))
-        pos_spins[1].valueChanged.connect(lambda v: self.on_position_changed(1, v))
-        pos_spins[2].valueChanged.connect(lambda v: self.on_position_changed(2, v))
-
-        rot_spins[0].valueChanged.connect(lambda v: self.on_rotation_changed(0, v))
-        rot_spins[1].valueChanged.connect(lambda v: self.on_rotation_changed(1, v))
-        rot_spins[2].valueChanged.connect(lambda v: self.on_rotation_changed(2, v))
-
         scale_spins[0].valueChanged.connect(lambda v: self.on_scale_changed(0, v))
         scale_spins[1].valueChanged.connect(lambda v: self.on_scale_changed(1, v))
         scale_spins[2].valueChanged.connect(lambda v: self.on_scale_changed(2, v))
 
-        self.properties_layout.addRow("Position", pos_row)
-        self.properties_layout.addRow("Rotation", rot_row)
         self.properties_layout.addRow("Scale", scale_row)
 
     def on_selection_changed(
@@ -282,6 +300,48 @@ class LeftPanel(QWidget):
         size_spin.valueChanged.connect(self.on_cube_size_changed)
 
         self.properties_layout.addRow("Size", size_spin)
+
+    def _build_persp_cam_properties(self, obj: SceneObject):
+        if not isinstance(obj.geometry, CameraGeometry):
+            return
+
+        self._add_cam_float_row("FOV", "fov_y_deg", obj.camera.fov_y_deg, 0.1, 130.0, 0.1, 3)
+        self._add_cam_float_row("Near", "near", obj.camera.near, 0.1, 20.0, 0.1, 3)
+        self._add_cam_float_row("Far", "far", obj.camera.far, 0.1, 20.0, 0.1, 3)
+
+    def _build_ortho_cam_properties(self, obj: SceneObject):
+        if not isinstance(obj.geometry, CameraGeometry):
+            return
+
+        self._add_cam_float_row("Scale", "ortho_scale", obj.camera.ortho_scale, 0.1, 15.0, 0.1, 3)
+        self._add_cam_float_row("Near", "near",obj.camera.near, 0.1, 20.0, 0.1, 3)
+        self._add_cam_float_row("Far", "far", obj.camera.far, 0.1, 20.0, 0.1, 3)
+
+    def _add_cam_float_row(self, label: str, attr: str, value: float, min_val: float, max_val: float, step: float, dec: int):
+        row = DragDoubleSpinBox(self)
+        row.setRange(min_val, max_val)
+        row.setDecimals(dec)
+        row.setSingleStep(step)
+        row.setValue(value)
+
+        row.valueChanged.connect(lambda v, attr=attr: self._on_cam_attribute_changed(attr, v))
+        self.properties_layout.addRow(label, row)
+
+    def _on_cam_attribute_changed(self, attr: str, value: float):
+        if self.current_object is None or self.current_object.camera is None:
+            return
+
+        clip_epsilon = 0.001
+        cam = self.current_object.camera
+        value = float(value)
+
+        if attr == "near":
+            value = max(clip_epsilon, min(value, cam.far - clip_epsilon))
+        elif attr == "far":
+            value = max(value, cam.near + clip_epsilon)
+
+        setattr(cam, attr, value)
+        self.camera_specs_changed.emit()
 
     def _build_sphere_properties(self, obj: SceneObject):
         if not isinstance(obj.geometry, SphereGeometry):
