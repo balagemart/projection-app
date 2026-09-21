@@ -37,6 +37,13 @@ def cube_vertices_per_vertex_colors(size: float = 1.0) -> np.ndarray:
     return np.array(data, dtype=np.float32)
 
 
+def cube_vertices_single_color(size: float, color: tuple[float, float, float]) -> np.ndarray:
+    verts = cube_vertices_per_vertex_colors(size).copy()
+    verts = verts.reshape(-1, 6)
+    verts[:, 3:6] = np.array(color, dtype=np.float32)
+    return verts.reshape(-1)
+
+
 def cube_indices() -> np.ndarray:
     """
     12 háromszög -> 36 index.

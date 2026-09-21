@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ctypes
-from dataclasses import dataclass
 import numpy as np
 import OpenGL.GL as gl
 
@@ -103,3 +102,15 @@ class Mesh:
         else:
             gl.glDrawArrays(self._primitive, 0, self._vertex_count)
         gl.glBindVertexArray(0)
+
+    def dispose(self) -> None:
+        if self._vao is not None:
+            gl.glDeleteVertexArrays(1, [self._vao])
+            self._vao = None
+        if self._vbo is not None:
+            gl.glDeleteBuffers(1, [self._vbo])
+            self._vbo = None
+
+        if self._ebo is not None:
+            gl.glDeleteBuffers(1, [self._ebo])
+            self._ebo = None

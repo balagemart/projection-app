@@ -1,16 +1,20 @@
 from __future__ import annotations
 from enum import Enum
+from typing import TYPE_CHECKING, ClassVar, Protocol
 
 import numpy as np
 from dataclasses import dataclass, field
-from typing import ClassVar
 
 from core.transforms import perspective, look_at, identity, orthographic
+
+if TYPE_CHECKING:
+    from scene.transform import Transform
 
 
 class ProjectionMode(Enum):
     PERSPECTIVE = "perspective"
     ORTHOGRAPHIC = "orthographic"
+    FISHEYE = "fisheye"
 
 
 class ViewMode(Enum):
@@ -22,13 +26,12 @@ class ViewMode(Enum):
     ISOMETRIC = "isometric"
 
 
-@dataclass
-class CameraData():
-    projection_mode: ProjectionMode = ProjectionMode.PERSPECTIVE
-    fov_y: float = 60.0
-    ortho_scale: float | None = None
-    near: float = 0.1
-    far: float = 100.0
+class Camera(Protocol):
+    def view_matrix(self) -> np.ndarray:
+        ...
+
+    def projection_matrix(self, aspect: float) -> np.ndarray:
+        ...
 
 
 @dataclass
@@ -181,3 +184,73 @@ class OrbitCamera:
 
     def _clamp_ortho_scale(self, lo: float = 0.1, hi: float = 200.0) -> None:
         self.ortho_scale = max(lo, min(hi, self.ortho_scale))
+
+
+@dataclass
+class SceneCamera:
+    transform: Transform
+    projection_mode: ProjectionMode = ProjectionMode.PERSPECTIVE
+    fov_y_deg: float = 60.0
+    ortho_scale: float = 10.0
+    near: float = 0.1
+    far: float = 10.0
+    resolution_width: int = 1920
+    resolution_height: int = 1080
+
+    @property
+    def aspect(self) -> float:
+        return self.resolution_width / self.resolution_height
+
+    def view_matrix(self) -> np.ndarray:
+        position = np.array(self.transform.position, dtype=np.float32)
+        forward, right, up = self.basis_vectors()
+
+        target = position + forward
+        return look_at(position, target, up)
+
+    def projection_matrix(self, aspect: float) -> np.ndarray:
+        if self.projection_mode == ProjectionMode.PERSPECTIVE:
+            return perspective(
+                np.deg2rad(self.fov_y_deg),
+                aspect,
+                self.near,
+                self.far,
+            )
+        elif self.projection_mode == ProjectionMode.ORTHOGRAPHIC:
+            half_h = self.ortho_scale
+            half_w = half_h * aspect
+
+            return orthographic(
+                -half_w,
+                half_w,
+                -half_h,
+                half_h,
+                self.near,
+                self.far,
+            )
+        raise ValueError(f"Unsupported projection mode: {self.projection_mode}")
+
+    def basis_vectors(self):
+        rotation = np.array(self.transform.rotation, dtype=np.float32)
+        rx, ry, _ = rotation
+
+        cx, sx = np.cos(rx), np.sin(rx)
+        cy, sy = np.cos(ry), np.sin(ry)
+
+        forward = np.array([
+            sy * cx,
+            -sx,
+            cy * cx,
+        ], dtype=np.float32)
+
+        forward = forward / np.linalg.norm(forward)
+
+        world_up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+
+        right = np.cross(forward, world_up)
+        right = right / np.linalg.norm(right)
+
+        up = np.cross(right, forward)
+        up = up / np.linalg.norm(up)
+
+        return forward, right, up
